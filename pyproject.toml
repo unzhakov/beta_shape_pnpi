@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beta-spectrum"
-version = "0.1.0"
+version = "0.1.1"
 description = "High-precision beta spectrum calculation for nuclear physics"
 authors = [
-    { name = "Your Name" }
+    { name = "Evgeniy Unzhakov" }
 ]
 requires-python = ">=3.10"
 

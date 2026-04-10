@@ -19,7 +19,7 @@ class FermiFunction(SpectrumComponent):
         p = np.sqrt(W**2 - 1.0)
 
         # Avoid division by zero
-        p = np.where(p == 0, 1e-30, p)
+        p = np.clip(p, 1e-30, None)
 
         eta = self.alphaZ * W / p
 
@@ -36,17 +36,12 @@ class FermiFunction(SpectrumComponent):
         log_gamma_complex = loggamma(z)
         log_gamma_abs_sq = 2 * np.real(log_gamma_complex)
 
-        log_gamma_denom = 2 * loggamma(2 * self.gamma + 1).real
+        log_gamma_denom = 2 * np.real(loggamma(2 * self.gamma + 1))
 
         # log exponential
         log_exp = np.pi * eta
 
-        logF = (
-            log_prefactor
-            + log_power
-            + log_gamma_abs_sq
-            - log_gamma_denom
-            + log_exp
-        )
+        logF = log_prefactor + log_power + log_gamma_abs_sq - log_gamma_denom + log_exp
 
         return np.exp(logF)
+
