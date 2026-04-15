@@ -78,7 +78,7 @@ ipython_config.py
 
 # Ignore generated spectra, fits, etc.
 
-data/
+# data/
 outputs/
 results/
 *.npy
