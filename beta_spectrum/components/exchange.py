@@ -41,26 +41,31 @@ class ExchangeCorrection(SpectrumComponent):
     def __call__(self, W: np.ndarray) -> np.ndarray:
         W = np.asarray(W)
 
-        # W' = W - 1 (threshold-sensitive)
-        Wp = np.maximum(W - 1.0, self.eps)
+        # Define physical cutoff
+        W_cut = 1.005
+
+        # Compute full expression ONLY above cutoff
+        W_safe = np.maximum(W, W_cut)
+
+        Wp = W_safe - 1.0
 
         a = self.coeffs["a"]
         b = self.coeffs["b"]
         c = self.coeffs["c"]
         d = self.coeffs["d"]
         e = self.coeffs["e"]
-        f = self.coeffs["f"]
+        f_coef = self.coeffs["f"]
         g = self.coeffs["g"]
         h = self.coeffs["h"]
         i = self.coeffs["i"]
 
-        # Terms
         term1 = a / Wp
         term2 = b / (Wp**2)
         term3 = c * np.exp(-d * Wp)
 
-        # Numerical safe (W - f)^g
-        base = np.maximum(W - f, self.eps)
-        term4 = e * np.sin((base**g + h)) / (W**i)
+        base = np.maximum(W_safe - f_coef, self.eps)
+        term4 = e * np.sin((base**g + h)) / (W_safe**i)
 
-        return 1.0 + term1 + term2 + term3 + term4
+        X_safe = 1.0 + term1 + term2 + term3 + term4
+
+        return X_safe

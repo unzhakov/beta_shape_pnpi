@@ -77,7 +77,7 @@ class RadiativeCorrection(SpectrumComponent):
         # Dilogarithm term
         arg = 2.0 * beta / (1.0 + beta)
         arg = np.minimum(arg, 1.0 - 1e-12)  # Avoid numerical problems at arg=1
-        dilog_term = (4.0 / beta) * spence(arg)
+        dilog_term = (4.0 / beta) * spence(1.0 - arg)
 
         # arctanh factor
         atanh_beta = np.arctanh(beta)
@@ -96,7 +96,7 @@ class RadiativeCorrection(SpectrumComponent):
         )
 
         # Leading constants from Eq. (50)
-        const_term = 3.0 * np.log(self.m_p) - 0.75
+        const_term = -0.75
 
         return const_term + dilog_term + term2 + term3
 
@@ -117,7 +117,7 @@ class RadiativeCorrection(SpectrumComponent):
         # Dilogarithm term (same as _delta_R_standard)
         arg = 2.0 * beta / (1.0 + beta)
         arg = np.minimum(arg, 1.0 - 1e-12)
-        dilog_term = (4.0 / beta) * spence(arg)
+        dilog_term = (4.0 / beta) * spence(1.0 - arg)
 
         # arctanh factor
         atanh_factor = (atanh_beta / beta) - 1.0
@@ -128,13 +128,14 @@ class RadiativeCorrection(SpectrumComponent):
 
         # Apply resummation from Eq. (53)
         # Replace divergent ln(W0 - W) term with (W0 - W)^t(beta) - 1
-        resummed_log_term = (delta_W**t_beta) - 1.0
+        log_delta = np.log(delta_W)
+        resummed_log = np.expm1(t_beta * log_delta) / t_beta
 
         # Term2 with resummed log (instead of ln(2*(W0 - W)))
         term2_resummed = (
             4.0
             * atanh_factor
-            * (delta_W / (3.0 * W) - 1.5 + 0.5 * resummed_log_term + np.log(2.0))
+            * (delta_W / (3.0 * W) - 1.5 + resummed_log + np.log(2.0))
         )
 
         # Term3 (no divergence)
@@ -143,6 +144,6 @@ class RadiativeCorrection(SpectrumComponent):
         )
 
         # Leading constants
-        const_term = 3.0 * np.log(self.m_p) - 0.75
+        const_term = -0.75
 
         return const_term + dilog_term + term2_resummed + term3

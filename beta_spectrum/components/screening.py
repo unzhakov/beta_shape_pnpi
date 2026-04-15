@@ -21,7 +21,7 @@ class ScreeningCorrection(SpectrumComponent):
         fermi_function,
         V0: float = None,
         Ws: float = 1.01,
-        Delta: float = 0.005,
+        Delta: float = 0.01,
         eps: float = 1e-6,
         C=0.015,
     ):
