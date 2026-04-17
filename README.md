@@ -198,22 +198,6 @@ Loaded dynamically based on nuclear charge ( Z ).
 
 ---
 
-## Notebooks
-
-Located in:
-
-```
-notebooks/
-```
-
-Used for:
-
-* testing corrections individually
-* plotting spectra
-* debugging numerical behavior
-
----
-
 ## Design Principles
 
 ### 1. Modularity
