@@ -403,7 +403,7 @@ class BetaSpectrumAnalyzer:
         import pandas as pd
 
         df = pd.DataFrame(data)
-        df.to_csv(filename, index=False, float_format="%.3e")
+        df.to_csv(filename, index=False, float_format="%.4e")
         print(f"Spectrum exported to {filename}")
 
     def get_data(self) -> Dict:
