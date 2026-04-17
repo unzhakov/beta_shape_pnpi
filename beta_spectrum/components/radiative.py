@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.special import spence
+from scipy.special import log_wright_bessel, spence
 
 from beta_spectrum.base import SpectrumComponent
 from beta_spectrum.constants import MP_MEV, ME_MEV, ALPHA
@@ -85,7 +85,7 @@ class RadiativeCorrection(SpectrumComponent):
 
         # Energy difference
         delta_W = self.W0 - W
-        delta_W = np.maximum(delta_W, 1e-12)
+        delta_W = np.maximum(delta_W > 0, delta_W, np.full_like(delta_W, 1e-12))
 
         # Second line Eq. (50)
         term2 = 4.0 * atanh_factor * (delta_W / (3.0 * W) - 1.5 + np.log(2.0 * delta_W))
@@ -124,19 +124,29 @@ class RadiativeCorrection(SpectrumComponent):
 
         # Energy difference
         delta_W = self.W0 - W
-        delta_W = np.maximum(delta_W, 1e-12)
+        delta_W = np.maximum(delta_W > 0, delta_W, np.full_like(delta_W, 1e-12))
 
         # Apply resummation from Eq. (53)
         # Replace divergent ln(W0 - W) term with (W0 - W)^t(beta) - 1
-        log_delta = np.log(delta_W)
-        resummed_log = np.expm1(t_beta * log_delta) / t_beta
+
+        # Stable handling of small t_beta
+        small_t = np.abs(t_beta) < 1e-6
+
+        resummed_log = np.empty_like(delta_W)
+
+        # For normal values
+        resummed_log[~small_t] = (
+            np.power(delta_W[~small_t], t_beta[~small_t]) - 1.0
+        ) / t_beta[~small_t]
+
+        # For very small t -> recover ln(delta_W)
+        resummed_log[small_t] = np.log(delta_W[small_t])
+
+        # Reconstruct ln(2*delta_W) properly
+        log_term = np.log(2.0) + resummed_log
 
         # Term2 with resummed log (instead of ln(2*(W0 - W)))
-        term2_resummed = (
-            4.0
-            * atanh_factor
-            * (delta_W / (3.0 * W) - 1.5 + resummed_log + np.log(2.0))
-        )
+        term2_resummed = 4.0 * atanh_factor * (delta_W / (3.0 * W) - 1.5 + log_term)
 
         # Term3 (no divergence)
         term3 = (atanh_beta / beta) * (
