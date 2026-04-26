@@ -10,6 +10,8 @@ from .components.screening import ScreeningCorrection
 from .components.exchange import ExchangeCorrection
 from .components.radiative import RadiativeCorrection
 
+from .spectrum import BetaSpectrum, SpectrumConfig, BetaSpectrumAnalyzer
+
 __all__ = [
     "ALPHA",
     "HBAR_C_MEV_FM",
@@ -25,6 +27,9 @@ __all__ = [
     "ScreeningCorrection",
     "ExchangeCorrection",
     "RadiativeCorrection",
+    "BetaSpectrum",
+    "SpectrumConfig",
+    "BetaSpectrumAnalyzer",
 ]
 
 __version__ = "0.1.2"
