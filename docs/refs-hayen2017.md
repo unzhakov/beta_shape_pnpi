@@ -19,7 +19,8 @@ cssclasses: []
 
 `~/LBML_cloud/ОПЯД/beta_corrections/Refs/Hayen2017.pdf` (2.1 MB, 63 pages)
 
-Summary: `~/wiki_brain/beta_shape/Hayen2017_summary.md`
+Summary: `docs/Hayen2017_summary.md`  
+BibTeX references: `data/hayen2017_refs.bib` (319 entries extracted from PDF)
 
 ## Key Equations Reference
 
@@ -78,3 +79,7 @@ Summary: `~/wiki_brain/beta_shape/Hayen2017_summary.md`
 - [[00-beta-spectrum-overview]] — Master equation and full corrections table (Table VII)
 - [[10-nuclear-structure]] — Shape factor formalism, BB vs HS comparison (§E in paper)
 - [[07-recoil-effects]] — Recoil kinematics, weak magnetism, induced currents
+
+## Reference Extraction Tool
+
+BibTeX was extracted using `extract_refs.py` (local regex mode), which parses pdftotext output to extract journal, volume, pages, arXiv IDs for 83% of references. For papers with non-standard citation formats, use `--llm` flag to invoke Qwen3.6 via llama-server API.

@@ -11,10 +11,14 @@
             "id": "3f527faa2742fc49",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "01-fermi-function.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "01-fermi-function"
             }
           }
         ]
@@ -178,17 +182,19 @@
   },
   "active": "3f527faa2742fc49",
   "lastOpenFiles": [
+    "02-phase-space.md",
+    "10-nuclear-structure.md",
+    "07-recoil-effects.md",
+    "05-exchange-correction.md",
+    "01-fermi-function.md",
     "00-beta-spectrum-overview.md",
+    "04-screening-correction.md",
+    "03-finite-size.md",
     "refs-hayen2017.md",
     "refs/hayen2017.md",
     "README.md",
     "refs",
-    "07-recoil-effects.md",
     "12-atomic-overlap.md",
-    "13-chemical-effects.md",
-    "01-fermi-function.md",
-    "02-phase-space.md",
-    "04-screening-correction.md",
-    "03-finite-size.md"
+    "13-chemical-effects.md"
   ]
 }
