@@ -42,7 +42,7 @@ class ExchangeCorrection(SpectrumComponent):
         W = np.asarray(W)
 
         # Define physical cutoff
-        W_cut = 1.005
+        W_cut = 1.003
 
         # Compute full expression ONLY above cutoff
         W_safe = np.maximum(W, W_cut)

@@ -25,6 +25,7 @@ class SpectrumConfig:
     Z_daughter: int
     A_number: int
     endpoint_MeV: float
+    transition_type: str = "A"  # should be [A, F1, F1U, F2, F2U, F3, F3U, F4]
     e_step_MeV: float = 0.001
 
     # Toggle components and corrections
@@ -82,7 +83,9 @@ class BetaSpectrum:
         W0 = T_to_W(config.endpoint_MeV)
 
         if config.use_phase_space:
-            components.append(PhaseSpace(W0=W0))
+            components.append(
+                PhaseSpace(W0=W0, transistion_type=config.transition_type)
+            )
 
         if config.use_fermi:
             components.append(FermiFunction(Z=config.Z_daughter, A=config.A_number))
