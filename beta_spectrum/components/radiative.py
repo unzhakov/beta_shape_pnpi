@@ -85,7 +85,7 @@ class RadiativeCorrection(SpectrumComponent):
 
         # Energy difference
         delta_W = self.W0 - W
-        delta_W = np.maximum(delta_W > 0, delta_W, np.full_like(delta_W, 1e-12))
+        delta_W = np.where(delta_W > 0, delta_W, 1e-12)
 
         # Second line Eq. (50)
         term2 = 4.0 * atanh_factor * (delta_W / (3.0 * W) - 1.5 + np.log(2.0 * delta_W))
@@ -124,7 +124,7 @@ class RadiativeCorrection(SpectrumComponent):
 
         # Energy difference
         delta_W = self.W0 - W
-        delta_W = np.maximum(delta_W > 0, delta_W, np.full_like(delta_W, 1e-12))
+        delta_W = np.where(delta_W > 0, delta_W, 1e-12)
 
         # Apply resummation from Eq. (53)
         # Replace divergent ln(W0 - W) term with (W0 - W)^t(beta) - 1
