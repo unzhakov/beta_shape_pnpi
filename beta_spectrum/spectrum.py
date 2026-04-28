@@ -84,7 +84,7 @@ class BetaSpectrum:
 
         if config.use_phase_space:
             components.append(
-                PhaseSpace(W0=W0, transistion_type=config.transition_type)
+                PhaseSpace(W0=W0, transition_type=config.transition_type)
             )
 
         if config.use_fermi:
