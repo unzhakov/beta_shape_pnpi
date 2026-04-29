@@ -176,4 +176,4 @@ slurm-*.out
 coverage.xml
 htmlcov/
 .cache/
-
+.obsidian/
