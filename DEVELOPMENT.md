@@ -3,8 +3,7 @@
 ## 1. Setup
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+source ~/.pyenv/sci/bin/activate
 pip install -e ".[dev]"
 ```
 
