@@ -101,6 +101,7 @@ config = SpectrumConfig(
     Z_daughter=91,
     A_number=232,
     endpoint_MeV=4.8,  # Q-value
+    transition_type="A",  # Allowed transition (default)
 )
 
 spectrum = BetaSpectrum.from_config(config)
@@ -118,7 +119,7 @@ analyzer.export_to_csv("output.csv")   # Export data to CSV
 
 | Component | Module | Status | Description |
 |---|---|---:|---|
-| Phase Space | `phase_space.py` | ✓ | Baseline $p W (W_0 - W)^2$, optional neutrino mass support |
+| Phase Space | `phase_space.py` | ✓ | Baseline $p W (W_0 - W)^2$ with transition-type-dependent forbidden factors and optional neutrino mass support |
 | Fermi Function | `fermi.py` | ✓ | Relativistic Coulomb correction via `scipy.special.loggamma` |
 | Finite Size L0 | `finite_size.py` | ✓ | Low-Z expansion from Hayen et al. with prefactor |
 | Charge Distribution U | `finite_size.py` | ✓ | Second-order $(1/5)(\alpha Z W R)^2$ correction |
@@ -136,6 +137,7 @@ Use `SpectrumConfig` to selectively enable/disable each correction:
 ```python
 config = SpectrumConfig(
     Z_parent=20, Z_daughter=21, A_number=40, endpoint_MeV=5.0,
+    transition_type="F1",  # first forbidden non-unique
     use_fermi=True,
     use_screening=False,   # disable atomic screening
     use_exchange=True,
@@ -144,6 +146,26 @@ config = SpectrumConfig(
 ```
 
 ---
+
+## Transition Types
+
+The `transition_type` parameter in `SpectrumConfig` determines the **forbidden factor** applied to the phase space calculation. This encodes the angular momentum and parity selection rules for the nuclear transition:
+
+| Type | Name | Forbidden Order | $\Delta J^\pi$ | Forbidden Factor |
+|------|------|-----------------|----------------|------------------|
+| `A` | Allowed | 0 | $0^+, 1^+$ | $1$ |
+| `F1` | First forbidden (non-unique) | 1 | $0^-, 1^-, 2^\pm$ | $p_\nu^2 + p_e^2$ |
+| `F1U` | First forbidden (unique) | 1 | $2^-$ | $p_\nu^2 + p_e^2$ |
+| `F2` | Second forbidden (non-unique) | 2 | $1^\pm, 2^+, 3^\pm$ | $p_\nu^4 + \frac{3}{10}p_\nu^2 p_e^2 + p_e^4$ |
+| `F2U` | Second forbidden (unique) | 2 | $3^-$ | $p_\nu^4 + \frac{3}{10}p_\nu^2 p_e^2 + p_e^4$ |
+| `F3` | Third forbidden (non-unique) | 3 | $0^\pm, 1^\pm, 2^\pm, 3^+, 4^\pm$ | $p_\nu^6 + 7p_\nu^4 p_e^2 + 7p_\nu^2 p_e^4 + p_e^6$ |
+| `F3U` | Third forbidden (unique) | 3 | $4^-$ | $p_\nu^6 + 7p_\nu^4 p_e^2 + 7p_\nu^2 p_e^4 + p_e^6$ |
+| `F4` | Fourth forbidden (unique) | 4 | $5^-$ | $p_\nu^6 + 7p_\nu^4 p_e^2 + 7p_\nu^2 p_e^4 + p_e^6$ |
+
+The forbidden factor multiplies the baseline phase space $p_e W_e p_\nu W_\nu$, modifying the spectral shape at higher energies. The even/odd suffix (`U`) distinguishes **unique** transitions (single contributing nuclear matrix element) from **non-unique** ones (multiple contributing matrix elements).
+
+> [!note] Shape factor
+> For a complete treatment of forbidden transitions, the nuclear **shape factor** $C(Z,W)$ from `[[10-nuclear-structure]]` should also be included. This is not yet implemented in the calculator.
 
 ## Dependencies
 

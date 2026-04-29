@@ -47,9 +47,22 @@ Deviations from linearity near the endpoint indicate:
 ## Calculator Implementation
 
 > [!tip] Code mapping
-> Module: `beta_spectrum/components/phase_space.py` → `PhaseSpace(W0)` class
+> Module: `beta_spectrum/components/phase_space.py` → `PhaseSpace(W0, transition_type)` class
 > 
-> Simple evaluation of $p \times W \times (W_0 - W)^2$ with masking near endpoint for numerical safety. Optionally includes neutrino mass support.
+> Evaluates $p \times W \times (W_0 - W)^2$ multiplied by a **transition-type-dependent forbidden factor**. Supports optional neutrino mass.
+
+## Transition Type and Forbidden Factors
+
+The `PhaseSpace` calculator accepts a `transition_type` parameter that determines the multiplicative forbidden factor applied to the baseline phase space:
+
+| `transition_type` | Forbidden Order | Forbidden Factor |
+|---|---|---|
+| `A`, `F1` | 0, 1 | $1$ |
+| `F1U`, `F2` | 1, 2 | $p_\nu^2 + p_e^2$ |
+| `F2U`, `F3` | 2, 3 | $p_\nu^4 + \frac{3}{10}p_\nu^2 p_e^2 + p_e^4$ |
+| `F3U`, `F4` | 3, 4 | $p_\nu^6 + 7p_\nu^4 p_e^2 + 7p_\nu^2 p_e^4 + p_e^6$ |
+
+The forbidden factor modifies the energy dependence of the spectrum, becoming significant at higher electron energies. See `[[10-nuclear-structure]]` for the full shape factor treatment.
 
 ## Energy Range
 
@@ -63,6 +76,6 @@ The phase space factor:
 ```python
 from beta_spectrum import PhaseSpace, T_to_W
 
-ps = PhaseSpace(W0=T_to_W(5.0))  # endpoint = 5 MeV
-values = ps(W_grid)               # returns p·W·(W₀-W)²
+ps = PhaseSpace(W0=T_to_W(5.0), transition_type="A")  # allowed transition, 5 MeV endpoint
+values = ps(W_grid)                                    # returns p·W·(W₀-W)² × forbidden_factor
 ```
