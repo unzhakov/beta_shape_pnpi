@@ -100,12 +100,13 @@ Experimental branching ratios: $BR_{\beta\gamma} \sim 3\times 10^{-3}$ (neutron)
 ## Calculator Implementation
 
 > [!tip] Code mapping
-> Module: `beta_spectrum/components/radiative.py` → `RadiativeCorrection(W0, use_endpoint_resummation=True)` class
+> Module: `beta_spectrum/components/radiative.py` → `RadiativeCorrection(W0, Z, A, use_endpoint_resummation)` class
 > 
-> Implements outer radiative corrections per Hayen Eqs. (47)–(53):
-> - Sirlin's $g(W_0,W)$ with `scipy.special.spence` for dilogarithm
-> - Soft-photon resummation at endpoint via Eq. (53)
-> - Order Zα² terms Δ₁ through Δ₄
+> Implements outer radiative corrections per Sirlin (1967) and Sirlin (1987):
+> - **O(α)**: Universal Sirlin function $g(W,W_0)$ with `scipy.special.spence` for dilogarithm
+> - **O(Zα²)**: Finite nuclear size correction $\delta_2(Z,W)$ using modified Gaussian model
+> - Soft-photon resummation at endpoint via Sirlin (1987) prescription
+> - Small-beta Taylor expansion for numerical stability at threshold
 > - Optional endpoint resummation flag
 
 ### API Usage
@@ -113,10 +114,21 @@ Experimental branching ratios: $BR_{\beta\gamma} \sim 3\times 10^{-3}$ (neutron)
 ```python
 from beta_spectrum import RadiativeCorrection
 
+# Light nucleus (tritium-like)
 rad = RadiativeCorrection(
-    W0=1.02,  # endpoint in m_e units
-    use_endpoint_resummation=True  # handles endpoint divergence
+    W0=1.02,
+    Z=1,
+    use_endpoint_resummation=True
 )
+
+# Heavy nucleus (uranium) with nuclear model correction
+rad = RadiativeCorrection(
+    W0=5.0,
+    Z=92,
+    A=238,  # affects Delta_F nuclear model term
+    use_endpoint_resummation=True
+)
+
 values = rad(W_grid)
 ```
 
