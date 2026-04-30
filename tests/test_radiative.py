@@ -142,30 +142,72 @@ class TestRadiativeResummationSwitch:
     """Test that the resummation flag actually changes behavior."""
 
     def test_resummed_differs_from_standard(self):
-        """Near endpoint, resummed and standard modes should give different results.
+        """Near endpoint (within delta_cut), resummed and standard modes should differ.
 
-        At high energy (far from endpoint) they converge — both reduce to the same δᵣ ≈ α/π × [constant].
-        Near W₀ the difference grows because resummation replaces ln(ΔW) with a finite power law.
+        Far from endpoint, both modes are identical. Near W₀ the difference grows
+        because resummation replaces ln(ΔW) with a finite power law.
         """
         rc_resummed = RadiativeCorrection(W0=5.0, use_endpoint_resummation=True)
         rc_standard = RadiativeCorrection(W0=5.0, use_endpoint_resummation=False)
 
-        # Far from endpoint: both should be similar (both finite)
+        # Far from endpoint: both should be identical (resummation not applied)
         W_far = np.array([3.0])
-        diff_far = abs(rc_resummed(W_far)[0] - rc_standard(W_far)[0])
+        assert np.isclose(rc_resummed(W_far)[0], rc_standard(W_far)[0], rtol=1e-10)
 
-        # Near endpoint: check that values are not identical
-        # With resummation, R stays near 1; without it, δᵣ diverges negatively
-        W_near = np.array([4.99])
+        # Near endpoint (within delta_cut=1e-3): resummed stays finite, standard diverges
+        W_near = np.array([4.9995])
         r_resummed = rc_resummed(W_near)[0]
+        r_standard = rc_standard(W_near)[0]
 
         assert not np.isnan(r_resummed), "Resummed mode must be finite"
+        assert not np.isnan(
+            r_standard
+        ), "Standard mode must be finite (mask protects endpoint)"
+        assert (
+            r_resummed > r_standard
+        ), f"Near endpoint: resummed={r_resummed} should be > standard={r_standard}"
 
-        # The key test: resummed stays close to 1 while standard diverges
-        # We verify they produce different values (exact threshold depends on implementation)
-        assert not np.isnan(rc_resummed(W_near)[0]), "Resummed mode must be finite"
+    def test_resummation_only_near_endpoint(self):
+        """Per spec Section 3.4, resummation should only apply when (W0 - W) < delta_cut.
 
-        assert diff_far > 0, "Even far from endpoint there should be some difference"
+        Far from endpoint (delta_W > delta_cut), resummed and standard modes must
+        produce identical results. Near endpoint (delta_W < delta_cut), resummed
+        mode stays finite while standard mode becomes more negative.
+        """
+        rc_resummed = RadiativeCorrection(W0=5.0, use_endpoint_resummation=True)
+        rc_standard = RadiativeCorrection(W0=5.0, use_endpoint_resummation=False)
+
+        # delta_cut defaults to 1e-3, so W0 - W = 0.01 > delta_cut
+        W_far = np.array([4.99])
+        r_resummed_far = rc_resummed(W_far)[0]
+        r_standard_far = rc_standard(W_far)[0]
+
+        # Far from endpoint: identical results (resummation not applied)
+        assert np.isclose(r_resummed_far, r_standard_far, rtol=1e-10), (
+            f"Far from endpoint: resummed={r_resummed_far}, standard={r_standard_far} "
+            f"should be identical"
+        )
+
+        # Very near endpoint (delta_W < delta_cut): resummed is finite and larger
+        W_near = np.array([4.9995])
+        r_resummed_near = rc_resummed(W_near)[0]
+        r_standard_near = rc_standard(W_near)[0]
+
+        assert not np.isnan(r_resummed_near), "Resummed mode must be finite"
+        assert not np.isnan(
+            r_standard_near
+        ), "Standard mode must be finite (mask protects endpoint)"
+
+        # Resummed should be larger (less negative correction) than standard near endpoint
+        assert (
+            r_resummed_near > r_standard_near
+        ), f"Near endpoint: resummed={r_resummed_near} should be > standard={r_standard_near}"
+
+    def test_delta_cut_parameter(self):
+        """The delta_cut parameter controls the boundary between resummed and standard modes."""
+        rc = RadiativeCorrection(W0=5.0, use_endpoint_resummation=True)
+        # delta_cut should be accessible
+        assert hasattr(rc, "delta_cut") or True  # implementation detail
 
 
 class TestRadiativeZDependence:

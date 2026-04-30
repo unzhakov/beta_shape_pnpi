@@ -33,6 +33,7 @@ class RadiativeCorrection(SpectrumComponent):
         Z: int = 0,
         A: int | None = None,
         use_endpoint_resummation: bool = True,
+        delta_cut: float = 1e-3,
     ):
         """
         Args:
@@ -40,11 +41,13 @@ class RadiativeCorrection(SpectrumComponent):
             Z: Nuclear charge of daughter nucleus
             A: Mass number (optional, affects nuclear model correction)
             use_endpoint_resummation: Apply Eq.(53) to handle ln(W0 - W) divergence
+            delta_cut: Only apply resummation when (W0 - W) < delta_cut (spec Section 3.4)
         """
         self.W0 = W0
         self.Z = Z
         self.A = A
         self.use_endpoint_resummation = use_endpoint_resummation
+        self.delta_cut = delta_cut
         self.m_p = MP_MEV / ME_MEV  # ~1836.15 (proton mass in m_e units)
         self.gamma_E = 0.57721566490153286  # Euler-Mascheroni constant
 
@@ -119,14 +122,20 @@ class RadiativeCorrection(SpectrumComponent):
         if self.use_endpoint_resummation:
             # Apply soft-photon resummation from Sirlin (1987)
             # Replace C(beta)*ln(W0-W) with C(beta)*((W0-W)^{t(beta)}-1)/t(beta)
+            # Only near endpoint: (W0 - W) < delta_cut (spec Section 3.4)
             t_beta = (2.0 * ALPHA / np.pi) * atanh_factor
             small_t = np.abs(t_beta) < 1e-6
 
             resummed_log = np.empty_like(delta_W)
-            resummed_log[~small_t] = (
-                np.power(delta_W[~small_t], t_beta[~small_t]) - 1.0
-            ) / t_beta[~small_t]
-            resummed_log[small_t] = np.log(delta_W[small_t])
+            resummed_log[:] = np.log(delta_W)
+
+            near_endpoint = delta_W < self.delta_cut
+            if np.any(near_endpoint):
+                resummed_log[near_endpoint] = (
+                    np.power(delta_W[near_endpoint], t_beta[near_endpoint]) - 1.0
+                ) / t_beta[near_endpoint]
+                small_t_mask = near_endpoint & small_t
+                resummed_log[small_t_mask] = np.log(delta_W[small_t_mask])
 
             log_term = np.log(2.0) + resummed_log
         else:
