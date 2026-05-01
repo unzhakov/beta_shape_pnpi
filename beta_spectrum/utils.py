@@ -1,12 +1,11 @@
 # utils.py
 import numpy as np
 
-from .constants import HBAR_C_MEV_FM, ME_MEV
+from .constants import HBAR_C_MEV_FM, ME_MEV, R0_FM
 
 
-def nuclear_radius(A: float, r0: float = 1.2) -> float:
-    r0_fm = 1.2  # fm
-    R_fm = r0_fm * A ** (1 / 3)
+def nuclear_radius(A: float, r0: float = R0_FM) -> float:
+    R_fm = r0 * A ** (1 / 3)
 
     return R_fm / (HBAR_C_MEV_FM / ME_MEV)
 
@@ -33,5 +32,5 @@ def W_to_T(W: float | np.ndarray) -> np.ndarray:
     return (W - 1.0) * ME_MEV
 
 
-def T_to_W(T_keV: float | np.ndarray) -> np.ndarray:
-    return T_keV / ME_MEV + 1.0
+def T_to_W(T_MeV: float | np.ndarray) -> np.ndarray:
+    return T_MeV / ME_MEV + 1.0

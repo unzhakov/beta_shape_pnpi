@@ -3,7 +3,14 @@ import numpy as np
 from scipy.special import spence
 
 from beta_spectrum.base import SpectrumComponent
-from beta_spectrum.constants import MP_MEV, ME_MEV, ALPHA, HBAR_C_MEV_FM
+from beta_spectrum.constants import (
+    MP_MEV,
+    ME_MEV,
+    ALPHA,
+    HBAR_C_MEV_FM,
+    EULER_GAMMA,
+    R0_FM,
+)
 
 
 class RadiativeCorrection(SpectrumComponent):
@@ -49,7 +56,7 @@ class RadiativeCorrection(SpectrumComponent):
         self.use_endpoint_resummation = use_endpoint_resummation
         self.delta_cut = delta_cut
         self.m_p = MP_MEV / ME_MEV  # ~1836.15 (proton mass in m_e units)
-        self.gamma_E = 0.57721566490153286  # Euler-Mascheroni constant
+        self.gamma_E = EULER_GAMMA  # Euler-Mascheroni constant
 
         # Precompute constant terms
         self._outer_normalization = ALPHA / (2.0 * np.pi)  # ~0.00116
@@ -206,8 +213,7 @@ class RadiativeCorrection(SpectrumComponent):
             return 0.0
 
         # Nuclear radius from Wilkinson's r_0
-        r_0 = 1.2  # fm
-        a_fm = r_0 * A ** (1.0 / 3.0)  # rms charge radius in fm
+        a_fm = R0_FM * A ** (1.0 / 3.0)  # rms charge radius in fm
         a_me = a_fm / (HBAR_C_MEV_FM / ME_MEV)  # convert to m_e^{-1} units
 
         # Lambda = sqrt(6)/a

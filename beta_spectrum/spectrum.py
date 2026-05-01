@@ -13,11 +13,10 @@ from beta_spectrum.components.exchange import ExchangeCorrection
 from beta_spectrum.components.radiative import RadiativeCorrection
 
 from beta_spectrum.utils import T_to_W
+from beta_spectrum.constants import ME_MEV
 
 if TYPE_CHECKING:
     from beta_spectrum.components.detector_response import DetectorResponse
-
-ME_ME = 0.510998950  # electron rest mass in MeV
 
 
 @dataclass
@@ -165,8 +164,9 @@ class BetaSpectrum:
         from beta_spectrum.components.detector_response import DetectorResponse
         from beta_spectrum.utils import T_to_W
 
-        sigma_a_me = config.detector_sigma_a_keV / ME_ME
-        tau_me = config.detector_tau_keV / ME_ME
+        sigma_a_me = config.detector_sigma_a_keV / ME_MEV
+
+        tau_me = config.detector_tau_keV / ME_MEV
 
         W0 = T_to_W(config.endpoint_MeV)
         channel_range = config.detector_channel_energy_range

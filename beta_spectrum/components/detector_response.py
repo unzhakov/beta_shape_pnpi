@@ -33,6 +33,8 @@ from scipy.interpolate import RegularGridInterpolator, interp1d
 from scipy.special import erfc
 from typing import Optional
 
+from beta_spectrum.constants import ME_MEV
+
 
 class DetectorResponse:
     """
@@ -196,7 +198,7 @@ class DetectorResponse:
         sigma_sq = self.sigma_a**2 + (self.sigma_b * np.sqrt(E)) ** 2
         if self.fano_factor > 0:
             # Fano contribution: σ = sqrt(F * E * w) in natural units
-            w_me = 3.6e-3 / 0.511  # 3.6 eV in m_e units
+            w_me = 3.6e-3 / ME_MEV  # 3.6 eV in m_e units
             sigma_sq += self.fano_factor * E * w_me
         return np.sqrt(sigma_sq)
 

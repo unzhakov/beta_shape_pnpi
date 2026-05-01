@@ -59,7 +59,7 @@ All conversions and constants must go through the central utilities:
 
 ```python
 from beta_spectrum.utils import T_to_W, W_to_T
-from beta_spectrum.constants import ME_ME, ME_KEV, ALPHA, M_P
+from beta_spectrum.constants import ME_MEV, ME_KEV, ALPHA, MP_MEV
 ```
 
 - Never hardcode physical constants — import from `constants.py`
