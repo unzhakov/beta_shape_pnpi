@@ -18,7 +18,6 @@ large arrays only when testing numerical stability or performance.
 """
 
 import numpy as np
-import pytest
 
 from beta_spectrum.components.phase_space import PhaseSpace
 
@@ -82,9 +81,9 @@ class TestPhaseSpaceNeutrinoMass:
         val_massive = ps_massive(W_near_endpoint)[0]
 
         assert not np.isnan(val_massive), "Should produce finite value"
-        assert val_massive < val_zero, (
-            "Massive neutrino must suppress spectrum near endpoint"
-        )
+        assert (
+            val_massive < val_zero
+        ), "Massive neutrino must suppress spectrum near endpoint"
 
     def test_massive_neutrino_gives_nan_below_threshold(self):
         """With m_nu > 0, below the effective threshold (W₀−W < m_nu), sqrt gives NaN.
@@ -102,9 +101,9 @@ class TestPhaseSpaceNeutrinoMass:
         W_deep_below = np.array([4.95])  # W₀ − W = 0.05 < m_nu=0.1 — below threshold
         result_below = ps(W_deep_below)
 
-        assert np.isnan(result_below[0]), (
-            "Below kinematic threshold, spectrum should be NaN"
-        )
+        assert np.isnan(
+            result_below[0]
+        ), "Below kinematic threshold, spectrum should be NaN"
 
 
 class TestPhaseSpaceArrayType:

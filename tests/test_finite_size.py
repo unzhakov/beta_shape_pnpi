@@ -23,7 +23,6 @@ This catches sign errors and magnitude bugs early.
 """
 
 import numpy as np
-import pytest
 
 from beta_spectrum.components.finite_size import FiniteSizeL0, ChargeDistributionU
 
@@ -41,9 +40,9 @@ class TestFiniteSizeL0:
         W_test = np.array([2.0])  # Mid-range energy
         result = fs(W_test)
 
-        assert abs(result[0] - 1.0) < 0.05, (
-            f"L₀ for Z=6 should be near unity but got {result[0]}"
-        )
+        assert (
+            abs(result[0] - 1.0) < 0.05
+        ), f"L₀ for Z=6 should be near unity but got {result[0]}"
 
     def test_correction_increases_with_Z(self):
         """Higher Z → larger αZ term in L₀ expansion → larger deviation from 1."""
@@ -57,9 +56,9 @@ class TestFiniteSizeL0:
         dev_30 = abs(fs_z30(W_test)[0] - 1.0)
         dev_80 = abs(fs_z80(W_test)[0] - 1.0)
 
-        assert dev_80 > dev_30 > dev_6, (
-            f"Deviation from unity must increase with Z: {dev_6}, {dev_30}, {dev_80}"
-        )
+        assert (
+            dev_80 > dev_30 > dev_6
+        ), f"Deviation from unity must increase with Z: {dev_6}, {dev_30}, {dev_80}"
 
     def test_positive_everywhere(self):
         """L₀ should be positive — it's a correction factor multiplicative to the spectrum."""
@@ -78,9 +77,9 @@ class TestChargeDistributionU:
         u = ChargeDistributionU(Z=6, A=12)
         result = u(np.array([2.0]))
 
-        assert abs(result[0] - 1.0) < 0.01, (
-            f"U for Z=6 should be near unity but got {result[0]}"
-        )
+        assert (
+            abs(result[0] - 1.0) < 0.01
+        ), f"U for Z=6 should be near unity but got {result[0]}"
 
     def test_always_positive_correction(self):
         """U = 1 + (1/5)(αZW R)² is always > 1 since the squared term is positive."""
@@ -97,9 +96,9 @@ class TestChargeDistributionU:
 
         W_test = np.array([3.0])
 
-        assert u_z60(W_test)[0] > u_z20(W_test)[0], (
-            f"U must increase with Z: {u_z20(W_test)} < {u_z60(W_test)}"
-        )
+        assert (
+            u_z60(W_test)[0] > u_z20(W_test)[0]
+        ), f"U must increase with Z: {u_z20(W_test)} < {u_z60(W_test)}"
 
 
 class TestFiniteSizeCombined:
@@ -113,9 +112,9 @@ class TestFiniteSizeCombined:
         W_test = np.linspace(1.5, 4.0, 10)
         combined = l0(W_test) * u(W_test)
 
-        assert np.all(np.abs(combined - 1.0) < 0.05), (
-            f"Combined finite-size for carbon should be near unity: {combined}"
-        )
+        assert np.all(
+            np.abs(combined - 1.0) < 0.05
+        ), f"Combined finite-size for carbon should be near unity: {combined}"
 
     def test_combined_positive(self):
         """Product of two positive factors must be positive."""

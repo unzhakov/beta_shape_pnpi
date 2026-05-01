@@ -45,23 +45,23 @@ class TestExchangeLowEnergy:
         low_W = np.array([1.1])  # T ≈ 50 keV — still "low" but above cutoff
         result = ex(low_W)
 
-        assert result[0] > 1.0, (
-            f"Exchange must enhance spectrum at low energy for heavy Z: got {result[0]}"
-        )
+        assert (
+            result[0] > 1.0
+        ), f"Exchange must enhance spectrum at low energy for heavy Z: got {result[0]}"
 
     def test_correction_grows_as_energy_decreases(self):
         """X(W) should increase as W → 1 (lower momentum → stronger exchange)."""
         ex = ExchangeCorrection(Z=50)  # Tin — moderate-heavy
 
-        low_W = np.array([1.2])   # Higher energy
+        low_W = np.array([1.2])  # Higher energy
         lower_W = np.array([1.05])  # Lower energy (above cutoff W_cut=1.005)
 
         s_low = ex(low_W)[0]
         s_lower = ex(lower_W)[0]
 
-        assert s_lower > s_low, (
-            f"Exchange must increase at lower energy: {s_low} → {s_lower}"
-        )
+        assert (
+            s_lower > s_low
+        ), f"Exchange must increase at lower energy: {s_low} → {s_lower}"
 
 
 class TestExchangeHighEnergy:
@@ -74,9 +74,9 @@ class TestExchangeHighEnergy:
         high_W = np.array([3.0, 5.0])
         result = ex(high_W)
 
-        assert abs(result[0] - 1.0) < 0.5, (
-            f"Exchange must approach unity at high energy: got {result}"
-        )
+        assert (
+            abs(result[0] - 1.0) < 0.5
+        ), f"Exchange must approach unity at high energy: got {result}"
 
 
 class TestExchangeNumericalStability:

@@ -25,7 +25,6 @@ Common practice: When testing a function with special mathematical functions
 """
 
 import numpy as np
-import pytest
 
 from beta_spectrum.components.fermi import FermiFunction
 
@@ -45,9 +44,9 @@ class TestFermiZeros:
         result = ff(W_test)
 
         # For Z=1, the correction from finite nuclear size and Coulomb terms gives ~3% deviation
-        assert np.all(np.abs(result - 1.0) < 0.05), (
-            f"Z=1 Fermi function should be ≈1 but got {result}"
-        )
+        assert np.all(
+            np.abs(result - 1.0) < 0.05
+        ), f"Z=1 Fermi function should be ≈1 but got {result}"
 
 
 class TestFermiPhysicalBehavior:
@@ -64,7 +63,9 @@ class TestFermiPhysicalBehavior:
 
         # Check monotonic decrease (each successive point should be smaller)
         diffs = np.diff(result)
-        assert np.all(diffs < 0), f"Fermi function must decrease with W; got diffs {diffs}"
+        assert np.all(
+            diffs < 0
+        ), f"Fermi function must decrease with W; got diffs {diffs}"
 
     def test_increases_with_Z(self):
         """Higher Z → stronger Coulomb attraction → larger F₀ at low energy.
@@ -82,9 +83,9 @@ class TestFermiPhysicalBehavior:
         f_30 = ff_z30(W_test)[0]
         f_80 = ff_z80(W_test)[0]
 
-        assert f_80 > f_30 > f_10, (
-            f"Fermi function must increase with Z: {f_10} < {f_30} < {f_80}"
-        )
+        assert (
+            f_80 > f_30 > f_10
+        ), f"Fermi function must increase with Z: {f_10} < {f_30} < {f_80}"
 
     def test_positive_values(self):
         """F₀ must be positive everywhere — it's a probability enhancement factor."""
@@ -126,6 +127,6 @@ class TestFermiOutputShape:
         for n_points in [1, 5, 100]:
             W_test = np.linspace(1.1, 3.0, n_points)
             result = ff(W_test)
-            assert result.shape == W_test.shape, (
-                f"Shape mismatch: input {W_test.shape} → output {result.shape}"
-            )
+            assert (
+                result.shape == W_test.shape
+            ), f"Shape mismatch: input {W_test.shape} → output {result.shape}"

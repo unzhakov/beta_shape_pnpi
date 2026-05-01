@@ -24,7 +24,6 @@ Common practice: For components with "switching" logic, always test both the on-
 """
 
 import numpy as np
-import pytest
 
 from beta_spectrum.components.fermi import FermiFunction
 from beta_spectrum.components.screening import ScreeningCorrection
@@ -44,9 +43,9 @@ class TestScreeningBasicProperties:
         high_W = np.array([3.0, 5.0])
         result = sc(high_W)
 
-        assert abs(result[0] - 1.0) < 0.1, (
-            f"Screening must approach unity at high energy: got {result}"
-        )
+        assert (
+            abs(result[0] - 1.0) < 0.1
+        ), f"Screening must approach unity at high energy: got {result}"
 
     def test_positive_values(self):
         """S(W) must be positive everywhere — it multiplies the spectrum."""
@@ -80,9 +79,9 @@ class TestScreeningEnergyDependence:
         # At low energy, correction is active and reduces the spectrum
         assert s_low < 1.1, f"Low-energy screening should suppress: {s_low}"
         # At mid energy, it's closer to unity
-        assert abs(s_mid - 1.0) < abs(s_low - 1.0), (
-            "Correction must decrease toward unity as W increases"
-        )
+        assert abs(s_mid - 1.0) < abs(
+            s_low - 1.0
+        ), "Correction must decrease toward unity as W increases"
 
 
 class TestScreeningParameters:
@@ -99,9 +98,9 @@ class TestScreeningParameters:
         result_custom = sc_custom(low_W)[0]
 
         # Different V₀ should give different results at low energy
-        assert abs(result_default - result_custom) > 0, (
-            "Custom V₀ must change the screening behavior"
-        )
+        assert (
+            abs(result_default - result_custom) > 0
+        ), "Custom V₀ must change the screening behavior"
 
 
 class TestScreeningOutputShape:
