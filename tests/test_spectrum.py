@@ -26,7 +26,6 @@ They serve as a safety net — if they pass, you can be confident the system wor
 """
 
 import numpy as np
-import pytest
 
 from beta_spectrum import BetaSpectrum, SpectrumConfig
 
@@ -82,7 +81,10 @@ class TestBetaSpectrumToggles:
     def test_all_disabled(self):
         """With all corrections disabled, only phase space remains — still valid output."""
         config = SpectrumConfig(
-            Z_parent=19, Z_daughter=20, A_number=40, endpoint_MeV=2.5,
+            Z_parent=19,
+            Z_daughter=20,
+            A_number=40,
+            endpoint_MeV=2.5,
             use_fermi=False,
             use_screening=False,
             use_finite_size=False,
@@ -101,7 +103,10 @@ class TestBetaSpectrumToggles:
     def test_fermi_only(self):
         """With only fermi function enabled: should give F₀(Z,W) — not just phase space."""
         config_minimal = SpectrumConfig(
-            Z_parent=19, Z_daughter=20, A_number=40, endpoint_MeV=2.5,
+            Z_parent=19,
+            Z_daughter=20,
+            A_number=40,
+            endpoint_MeV=2.5,
             use_phase_space=False,
             use_screening=False,
             use_finite_size=False,
@@ -143,7 +148,7 @@ class TestBetaSpectrumAnalyzer:
             Z_parent=19, Z_daughter=20, A_number=40, endpoint_MeV=2.5
         )
         spectrum = BetaSpectrum.from_config(config)
-        analyzer = type('Analyzer', (), {'spectrum': spectrum, 'config': config})()
+        _analyzer = type("Analyzer", (), {"spectrum": spectrum, "config": config})()
 
         # We can't easily instantiate the full Analyzer without matplotlib backend,
         # but we verify the spectrum itself works end-to-end.
@@ -176,7 +181,10 @@ class TestBetaSpectrumRealisticConfig:
     def test_low_Z_spectrum(self):
         """Light nucleus (Z=6 carbon-14 beta decay)."""
         config = SpectrumConfig(
-            Z_parent=5, Z_daughter=6, A_number=14, endpoint_MeV=0.156  # ~156 keV for C-14
+            Z_parent=5,
+            Z_daughter=6,
+            A_number=14,
+            endpoint_MeV=0.156,  # ~156 keV for C-14
         )
 
         spectrum = BetaSpectrum.from_config(config)
@@ -186,3 +194,172 @@ class TestBetaSpectrumRealisticConfig:
         assert np.all(np.isfinite(values)), "C-14 must not produce NaN/inf"
         # Phase space should peak in the bulk for low-Q decay
         assert np.any(values > 0), "Should have non-zero spectrum values"
+
+
+class TestDeclarativeDetectorResponse:
+    """Test declarative detector response workflow via SpectrumConfig."""
+
+    def test_create_detector_from_config(self):
+        """SpectrumConfig detector params should create valid DetectorResponse."""
+        from beta_spectrum import DetectorResponse
+
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            detector_model="gaussian",
+            detector_sigma_a_keV=1.0,
+            detector_n_channels=512,
+        )
+
+        detector = BetaSpectrum.create_detector_from_config(config)
+
+        assert isinstance(detector, DetectorResponse)
+        assert detector.n_channels == 512
+        assert detector._mode == "analytical"
+        assert detector.model == "gaussian"
+
+    def test_detector_sigma_conversion(self):
+        """Sigma in keV should be correctly converted to m_e units."""
+        from beta_spectrum.utils import T_to_W
+
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            detector_sigma_a_keV=1.0,
+            detector_fano_factor=0.0,
+        )
+
+        detector = BetaSpectrum.create_detector_from_config(config)
+
+        # 1.0 keV = 1.0/511.0 m_e ≈ 0.00196
+        expected_sigma = 1.0 / 0.510998950
+        sigma_at_endpoint = detector._resolution_sigma(T_to_W(0.294))
+        assert np.isclose(sigma_at_endpoint, expected_sigma, rtol=0.01)
+
+    def test_convolve_detector_single_call(self):
+        """convolve_detector() should work in a single call with config params."""
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            detector_model="gaussian",
+            detector_sigma_a_keV=1.0,
+            detector_n_channels=512,
+            detector_fano_factor=0.0,
+        )
+
+        spectrum = BetaSpectrum.from_config(config)
+        W, _ = spectrum.get_energy_grid(config)
+
+        convolved = spectrum.convolve_detector(config, W=W)
+
+        assert convolved.shape == (512,)
+        assert np.all(convolved >= 0), "Convolved spectrum should be non-negative"
+        assert np.sum(convolved) > 0, "Convolved spectrum should have non-zero area"
+
+    def test_convolve_detector_with_tail(self):
+        """Convolution with tail model should produce low-energy tailing."""
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            detector_model="gaussian_tail",
+            detector_sigma_a_keV=1.0,
+            detector_tail_fraction=0.2,
+            detector_tau_keV=5.0,
+            detector_n_channels=512,
+            detector_fano_factor=0.0,
+        )
+
+        spectrum = BetaSpectrum.from_config(config)
+        W, _ = spectrum.get_energy_grid(config)
+
+        convolved = spectrum.convolve_detector(config, W=W)
+
+        assert convolved.shape == (512,)
+        assert np.all(convolved >= 0)
+
+    def test_analyzer_convolved_from_config(self):
+        """BetaSpectrumAnalyzer should use config detector params automatically."""
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            use_detector_response=True,
+            detector_model="gaussian",
+            detector_sigma_a_keV=1.0,
+            detector_n_channels=256,
+            detector_fano_factor=0.0,
+        )
+
+        spectrum = BetaSpectrum.from_config(config)
+        from beta_spectrum import BetaSpectrumAnalyzer
+
+        analyzer = BetaSpectrumAnalyzer(spectrum, config)
+        detector = BetaSpectrum.create_detector_from_config(config)
+
+        convolved = analyzer.convolved_spectrum(detector, normalize=True)
+
+        assert convolved.shape == (256,)
+        # Normalized spectrum should integrate to ~1 over channel energies
+        integral = np.trapezoid(convolved, detector.channel_energies)
+        assert np.isclose(
+            integral, 1.0, rtol=0.05
+        ), f"Integral should be ~1.0, got {integral}"
+
+    def test_detector_range_extends_to_endpoint(self):
+        """Detector channel range should extend to cover spectrum endpoint."""
+        config = SpectrumConfig(
+            Z_parent=43,
+            Z_daughter=44,
+            A_number=99,
+            endpoint_MeV=0.294,
+            detector_channel_energy_range=(0.0, 0.2),  # Less than endpoint
+            detector_n_channels=256,
+            detector_fano_factor=0.0,
+        )
+
+        detector = BetaSpectrum.create_detector_from_config(config)
+
+        # Range should extend beyond endpoint in m_e units
+        from beta_spectrum.utils import T_to_W
+
+        W0 = T_to_W(0.294)
+        assert detector.channel_energies[-1] >= W0, (
+            f"Detector range {detector.channel_energies[-1]:.4f} should cover "
+            f"endpoint {W0:.4f}"
+        )
+
+    def test_different_detector_models(self):
+        """All detector models should produce valid convolved spectra."""
+        models = ["gaussian", "gaussian_tail", "tikhonov"]
+
+        for model in models:
+            config = SpectrumConfig(
+                Z_parent=43,
+                Z_daughter=44,
+                A_number=99,
+                endpoint_MeV=0.294,
+                detector_model=model,
+                detector_sigma_a_keV=1.0,
+                detector_n_channels=256,
+                detector_fano_factor=0.0,
+            )
+            if model == "gaussian_tail":
+                config.detector_tail_fraction = 0.1
+                config.detector_tau_keV = 5.0
+
+            spectrum = BetaSpectrum.from_config(config)
+            W, _ = spectrum.get_energy_grid(config)
+
+            convolved = spectrum.convolve_detector(config, W=W)
+
+            assert convolved.shape == (256,)
+            assert np.all(convolved >= 0), f"Model {model} produced negative values"
