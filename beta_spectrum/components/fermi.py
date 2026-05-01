@@ -44,4 +44,3 @@ class FermiFunction(SpectrumComponent):
         logF = log_prefactor + log_power + log_gamma_abs_sq - log_gamma_denom + log_exp
 
         return np.exp(logF)
-
