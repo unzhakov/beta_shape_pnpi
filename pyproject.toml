@@ -24,6 +24,7 @@ where = ["."]
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "nbmake",
     "black",
     "ruff",
     "mypy",
@@ -41,7 +42,7 @@ strict = true
 line-length = 88
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "notebooks"]
 
 [tool.ruff]
 line-length = 88

@@ -67,12 +67,45 @@ All of the following MUST pass before merging to `main`:
 
 ```bash
 pytest                           # all tests pass
+nbmake notebooks/                # execute and validate notebooks
 black --check .                  # code formatting
 ruff check .                     # linting
 mypy .                           # type checking (strict mode)
 ```
 
 These are configured in `pyproject.toml`. Run them individually to identify failures.
+
+### Notebook Quality Control
+
+Notebooks in `notebooks/` are executed as pytest tests using `nbmake`. This ensures:
+
+- All code cells execute without errors
+- Full error traces are available for debugging
+- Plots are extracted for LLM-based visual analysis
+
+**Workflow:**
+
+1. Write notebooks with explicit figure saving:
+   ```python
+   fig.savefig('_plots/notebook_name_cell{N}.png', dpi=100, bbox_inches='tight')
+   from IPython.display import display, Image
+   display(Image(filename='_plots/notebook_name_cell{N}.png'))
+   ```
+
+2. Execute and extract plots:
+   ```bash
+   python scripts/run_notebooks.py notebooks/
+   ```
+
+3. Send extracted plots to LLM for visual review:
+   ```
+   @notebooks/_plots/notebook_name_cell4.png
+   ```
+
+4. Run full quality gates:
+   ```bash
+   pytest notebooks/ --nbmake  # or just `pytest` (includes notebooks/)
+   ```
 
 ## 5. Agent Instructions
 
