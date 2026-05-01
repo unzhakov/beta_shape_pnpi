@@ -26,7 +26,11 @@ dev = [
     "pytest",
     "black",
     "ruff",
-    "mypy"
+    "mypy",
+    "mdformat",
+    "mdformat-frontmatter",
+    "mdformat-footnote",
+    "mdformat-tables"
 ]
 
 [tool.mypy]
@@ -41,3 +45,8 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 88
+
+[tool.mdformat]
+line-length = 88
+wrap = false
+number = true
