@@ -57,11 +57,9 @@ Branch naming: `dev/<short-description>` (e.g., `dev/recoil-correction`)
 
 ### What to Test
 
-- **Physical constraints**: values at thresholds, endpoints, and boundaries must match known physics
-- **Monotonicity / positivity**: spectrum components should not produce unphysical negative values
-- **Shape correctness**: output shape must match input shape
-- **Type safety**: components accept and return `np.ndarray`
-- **Numerical stability**: no NaN or inf in the physical energy range (except where physically expected)
+See [`CONVENTIONS.md`](CONVENTIONS.md) §4 for physics-specific testing guidelines (physical constraints, positivity, numerical stability).
+
+For general test structure, use the conventions below.
 
 ## 4. Quality Gates
 
