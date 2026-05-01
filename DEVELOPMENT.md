@@ -2,6 +2,9 @@
 
 ## 1. Setup
 
+Do not attempt system wide pip installations. Use virtual environment 'sci'.
+Default venv location: `~/.pyenv/`.
+
 ```bash
 source ~/.pyenv/sci/bin/activate
 pip install -e ".[dev]"
