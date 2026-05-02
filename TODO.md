@@ -168,6 +168,8 @@ ______________________________________________________________________
 ## Current Status
 
 **Version:** 0.2.0\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Comprehensive test suite (72 tests).
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. Comprehensive test suite (106 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Next immediate step:** A2 — implement detector response function and convolution routines, as this is the bridge between theoretical spectra and experimental data.
+**Completed:** A2 — detector response function and convolution routines.
+
+**Next immediate step:** A4 — implement fitter routine to extract experimental C(W) from data.
