@@ -12,6 +12,8 @@ from .components.radiative import RadiativeCorrection
 from .components.detector_response import DetectorResponse
 
 from .spectrum import BetaSpectrum, SpectrumConfig, BetaSpectrumAnalyzer
+from .fitter import CurveFitter, FitConfig, FitResult
+from .cw_extractor import CWExtractor, CWExtractionResult, GVAExtractionResult
 
 __all__ = [
     "ALPHA",
@@ -32,6 +34,12 @@ __all__ = [
     "BetaSpectrum",
     "SpectrumConfig",
     "BetaSpectrumAnalyzer",
+    "CurveFitter",
+    "FitConfig",
+    "FitResult",
+    "CWExtractor",
+    "CWExtractionResult",
+    "GVAExtractionResult",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
