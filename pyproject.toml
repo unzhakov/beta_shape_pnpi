@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beta-spectrum"
-version = "0.1.2"
+version = "0.3.0"
 description = "High-precision beta spectrum calculation for nuclear physics"
 authors = [
     { name = "Evgeniy Unzhakov" }
@@ -18,10 +18,8 @@ dependencies = [
     "pandas"
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-
 [project.optional-dependencies]
+ensdf = ["paceENSDF"]
 dev = [
     "pytest",
     "nbmake",
@@ -33,6 +31,12 @@ dev = [
     "mdformat-footnote",
     "mdformat-tables"
 ]
+
+[project.scripts]
+bs_pnpi = "beta_spectrum.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.mypy]
 python_version = "3.10"

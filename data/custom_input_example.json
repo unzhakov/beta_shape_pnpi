@@ -1,0 +1,18 @@
+{
+    "parent_symbol": "Tc99",
+    "Z_parent": 43,
+    "Z_daughter": 44,
+    "A_number": 99,
+    "endpoint_MeV": 0.294,
+    "transition_type": "A",
+    "e_step_MeV": 0.001,
+    "use_detector_response": false,
+    "detector_model": "gaussian",
+    "detector_sigma_a_keV": 1.0,
+    "detector_sigma_b": 0.0,
+    "detector_tail_fraction": 0.0,
+    "detector_tau_keV": 5.0,
+    "detector_fano_factor": 0.12,
+    "detector_n_channels": 4096,
+    "detector_channel_energy_range": [0.0, 0.35]
+}
