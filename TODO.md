@@ -144,6 +144,33 @@ ______________________________________________________________________
   - Confidence intervals
   - Goodness-of-fit statistics
 
+### B8. CLI & Output Improvements
+
+- [ ] Implement structured logging system
+  - Log to stdout with configurable verbosity levels (INFO, DEBUG, WARNING)
+  - Visualize workflow steps: data loading, parameter resolution, calculation progress
+  - Log all used parameters: Z_parent, Z_daughter, A_number, endpoint, transition type, enabled corrections
+  - Optional log file output with timestamped filename
+  - Integrate Python `logging` module with custom formatter
+- [ ] Add metadata header to CSV output files
+  - Date and time of calculation (ISO 8601 format)
+  - Nuclide information: parent/daughter symbol, Z, A
+  - Decay/transition info: endpoint energy, transition type, forbiddenness
+  - Calculation parameters: energy step, enabled corrections, detector settings
+  - Software version and git commit hash (if available)
+  - Format: YAML-style comments at top of CSV file
+- [ ] Optimize CLI argument design and add sanity checks
+  - Auto-deduce `transition_type` from `decay_type` and nuclear data — remove as explicit CLI parameter
+  - Auto-deduce `decay_type` from Z_parent vs Z_daughter difference — remove as explicit CLI parameter
+  - Add sanity checks for custom input:
+    - `|Z_parent - Z_daughter|` must equal 1 (beta decay)
+    - For `beta_minus`: Z_daughter must be Z_parent + 1
+    - For `beta_plus`/`ec`: Z_daughter must be Z_parent - 1
+    - Warn if decay_type contradicts Z values (e.g., beta+ with Z_daughter > Z_parent)
+    - Validate endpoint_MeV > 0 and endpoint_MeV > level_energy_keV/1000
+    - Cross-check transition_type against ENSDF forbiddenness (if paceENSDF source)
+  - Add `--dry-run` option to validate input and display resolved parameters without calculation
+
 ______________________________________________________________________
 
 ## Deferred (Not Planned)
