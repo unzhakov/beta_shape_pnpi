@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.optimize import least_squares  # type: ignore[import-untyped]
+from scipy.optimize import least_squares
 
 
 @dataclass
@@ -80,7 +80,7 @@ class FitResult:
         High p-value (>0.05) suggests good fit; low p-value (<0.01) suggests
         poor fit or underestimated uncertainties.
         """
-        from scipy.stats import chi2  # type: ignore[import-untyped]
+        from scipy.stats import chi2
 
         return float(1.0 - chi2.cdf(self.chi2, self.n_points - self.n_free))
 

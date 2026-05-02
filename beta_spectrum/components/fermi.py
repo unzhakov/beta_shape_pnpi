@@ -1,6 +1,6 @@
 # components/fermi.py
 import numpy as np
-from scipy.special import loggamma  # type: ignore[import-untyped]
+from scipy.special import loggamma
 
 from ..base import SpectrumComponent
 from ..constants import ALPHA

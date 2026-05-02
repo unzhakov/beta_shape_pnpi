@@ -305,7 +305,7 @@ def _resolve_decay_index(
     ValueError
         If no matching decay is found.
     """
-    import paceENSDF as pe  # type: ignore[import-untyped]
+    import paceENSDF as pe
 
     e = pe.ENSDF()
     pairs = e.ensdf_pairs(edata, mode)

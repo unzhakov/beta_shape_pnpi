@@ -1,6 +1,6 @@
 # components/radiative.py
 import numpy as np
-from scipy.special import spence  # type: ignore[import-untyped]
+from scipy.special import spence
 
 from beta_spectrum.base import SpectrumComponent
 from beta_spectrum.constants import (

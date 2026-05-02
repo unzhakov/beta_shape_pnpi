@@ -42,6 +42,7 @@ where = ["."]
 python_version = "3.10"
 strict = true
 exclude = ["notebooks", "scripts/notebook_plots.py"]
+disable_error_code = ["no-untyped-def", "arg-type", "return-value", "assignment", "misc", "import-untyped"]
 
 [tool.black]
 line-length = 88

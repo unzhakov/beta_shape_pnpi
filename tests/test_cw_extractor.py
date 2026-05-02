@@ -160,7 +160,7 @@ class TestCWParametrization:
         p = np.sqrt(np.maximum(W**2 - 1.0, 0.0))
         from beta_spectrum.components.fermi import FermiFunction
 
-        F = FermiFunction()(W, config.Z_parent)
+        F = FermiFunction(Z=config.Z_parent, A=config.A_number)(W)
 
         C0 = 1.0  # Normalization
         endpoint_factor = (T_to_W(endpoint_keV / 1000.0) - W) ** 2

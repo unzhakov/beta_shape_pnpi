@@ -3,6 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 
@@ -118,7 +119,7 @@ class TestValidateJsonInput:
 class TestJsonInput:
     """Test JSON file loading and conversion."""
 
-    def _write_json(self, data: dict) -> Path:
+    def _write_json(self, data: Dict[str, Any]) -> Path:
         """Write data to a temp JSON file."""
         tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
         json.dump(data, tmp)
@@ -279,7 +280,7 @@ class TestPaceENSDFIntegration:
 class TestCreateConfigFromSource:
     """Test the unified config creation interface."""
 
-    def _write_json(self, data: dict) -> Path:
+    def _write_json(self, data: Dict[str, Any]) -> Path:
         tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
         json.dump(data, tmp)
         tmp.close()

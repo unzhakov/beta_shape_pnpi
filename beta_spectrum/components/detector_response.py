@@ -29,8 +29,8 @@ deposits energy E_j in the detector channel j, and ΔW_i is the bin width.
 from __future__ import annotations
 
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator, interp1d  # type: ignore[import-untyped]
-from scipy.special import erfc  # type: ignore[import-untyped]
+from scipy.interpolate import RegularGridInterpolator, interp1d
+from scipy.special import erfc
 from typing import Optional
 
 from beta_spectrum.constants import ME_MEV

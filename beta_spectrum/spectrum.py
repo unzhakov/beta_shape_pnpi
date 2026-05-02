@@ -594,7 +594,7 @@ class BetaSpectrumAnalyzer:
         for name, values in components.items():
             data[name] = values
 
-        import pandas as pd  # type: ignore[import-untyped]
+        import pandas as pd
 
         df = pd.DataFrame(data)
         df.to_csv(filename, index=False, float_format="%.4e")
