@@ -18,10 +18,10 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares  # type: ignore[import-untyped]
 
 
 @dataclass
@@ -55,7 +55,7 @@ class FitResult:
     message: str
     """Optimization success/failure message."""
 
-    _model: Optional[Callable] = field(default=None, repr=False)
+    _model: Optional[Callable[..., Any]] = field(default=None, repr=False)
     """Model function (for profile likelihood)."""
 
     _x_data: Optional[np.ndarray] = field(default=None, repr=False)
@@ -80,9 +80,9 @@ class FitResult:
         High p-value (>0.05) suggests good fit; low p-value (<0.01) suggests
         poor fit or underestimated uncertainties.
         """
-        from scipy.stats import chi2
+        from scipy.stats import chi2  # type: ignore[import-untyped]
 
-        return 1.0 - chi2.cdf(self.chi2, self.n_points - self.n_free)
+        return float(1.0 - chi2.cdf(self.chi2, self.n_points - self.n_free))
 
     @property
     def parameters_with_errors(self) -> Dict[str, Tuple[float, float]]:
@@ -101,7 +101,7 @@ class FitResult:
     def correlation_matrix(self) -> np.ndarray:
         """Parameter correlation matrix."""
         diag = np.sqrt(np.diag(self.covariance))
-        return self.covariance / np.outer(diag, diag)
+        return np.asarray(self.covariance / np.outer(diag, diag), dtype=np.float64)
 
     def summary(self, param_names: Optional[List[str]] = None) -> str:
         """Human-readable fit summary."""
@@ -299,12 +299,12 @@ class CurveFitter:
 
     def __init__(
         self,
-        model: Callable,
+        model: Callable[..., Any],
         x_data: np.ndarray,
         y_data: np.ndarray,
         uncertainties: Optional[np.ndarray] = None,
         config: Optional[FitConfig] = None,
-    ):
+    ) -> None:
         """
         Initialize fitter.
 
@@ -321,9 +321,9 @@ class CurveFitter:
         config : FitConfig, optional
             Fitting configuration. Uses defaults if None.
         """
-        self.x_data = np.asarray(x_data, dtype=np.float64)
-        self.y_data = np.asarray(y_data, dtype=np.float64)
-        self.model = model
+        self.x_data: np.ndarray = np.asarray(x_data, dtype=np.float64)
+        self.y_data: np.ndarray = np.asarray(y_data, dtype=np.float64)
+        self.model: Callable[..., Any] = model
 
         if uncertainties is not None:
             self.uncertainties = np.asarray(uncertainties, dtype=np.float64)
@@ -342,11 +342,14 @@ class CurveFitter:
             self.config = FitConfig()
 
         self._n_params: Optional[int] = None
+        self._last_result: Optional[FitResult] = None
 
     def _residuals(self, params: np.ndarray) -> np.ndarray:
         """Compute weighted residuals for least_squares."""
         y_model = self.model(self.x_data, *params)
-        return (self.y_data - y_model) / self.uncertainties
+        return np.asarray(
+            (self.y_data - y_model) / self.uncertainties, dtype=np.float64
+        )
 
     def _chi2(self, params: np.ndarray) -> float:
         """Compute χ² for given parameters."""
@@ -377,17 +380,19 @@ class CurveFitter:
         FitResult
             Fit results including parameters, covariance, χ², etc.
         """
-        x0 = np.asarray(x0, dtype=np.float64)
-        self._n_params = len(x0)
+        x0_array = np.asarray(x0, dtype=np.float64)
+        self._n_params = len(x0_array)
 
+        bounds_array: Optional[Tuple[np.ndarray, np.ndarray]] = None
         if bounds is not None:
-            lb = np.asarray(bounds[0], dtype=np.float64)
-            ub = np.asarray(bounds[1], dtype=np.float64)
-            bounds = (lb, ub)
+            bounds_array = (
+                np.asarray(bounds[0], dtype=np.float64),
+                np.asarray(bounds[1], dtype=np.float64),
+            )
 
         ls_kwargs = dict(
             fun=self._residuals,
-            x0=x0,
+            x0=x0_array,
             method=self.config.method,
             max_nfev=self.config.max_nfev,
             x_scale=self.config.x_scale,
@@ -398,7 +403,7 @@ class CurveFitter:
             gtol=self.config.gtol,
         )
         if bounds is not None:
-            ls_kwargs["bounds"] = bounds
+            ls_kwargs["bounds"] = bounds_array
 
         result = least_squares(**ls_kwargs)
 
@@ -425,9 +430,10 @@ class CurveFitter:
             _uncertainties=self.uncertainties,
         )
 
+        self._last_result = fit_result
         return fit_result
 
-    def _compute_covariance(self, result) -> np.ndarray:
+    def _compute_covariance(self, result: Any) -> np.ndarray:
         """Estimate parameter covariance matrix from Jacobian."""
         n = len(result.x)
         cov = np.zeros((n, n))
@@ -440,20 +446,20 @@ class CurveFitter:
                 # Scale by χ²/ndof
                 chi2 = self._chi2(result.x)
                 ndof = max(len(self.x_data) - n, 1)
-                cov *= chi2 / ndof
+                cov = cov * chi2 / ndof
             else:
                 # Singular matrix — use pseudo-inverse
                 cov = np.linalg.pinv(jtj)
                 chi2 = self._chi2(result.x)
                 ndof = max(len(self.x_data) - n, 1)
-                cov *= chi2 / ndof
+                cov = cov * chi2 / ndof
 
         return cov
 
     def residuals_plot(
         self,
         save_path: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Plot data, model, and residuals.
 
@@ -472,6 +478,13 @@ class CurveFitter:
             sharex=True,
         )
 
+        if self._last_result is None:
+            raise RuntimeError("No fit result available. Call fit() first.")
+
+        model_values = self._last_result.model_values
+        residuals = self._last_result.residuals
+        chi2_per_dof = self._last_result.chi2_per_dof
+
         # Data + model
         ax1.errorbar(
             self.x_data,
@@ -485,7 +498,7 @@ class CurveFitter:
         )
         ax1.plot(
             self.x_data,
-            self.model_values,
+            model_values,
             "r-",
             lw=1.5,
             label="Model",
@@ -496,12 +509,12 @@ class CurveFitter:
         ax1.grid(True, alpha=0.3)
 
         # Residuals
-        residuals = self.residuals / self.uncertainties
+        residuals = residuals / self.uncertainties
         ax2.plot(self.x_data, residuals, "bo", markersize=4, alpha=0.7)
         ax2.axhline(y=0, color="k", linestyle="--", lw=0.5)
         ax2.set_xlabel("Energy [MeV]")
         ax2.set_ylabel("Residuals (σ)")
-        ax2.set_title(f"Residuals  χ²/ndof = {self.chi2_per_dof:.3f}")
+        ax2.set_title(f"Residuals  χ²/ndof = {chi2_per_dof:.3f}")
         ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
@@ -514,14 +527,14 @@ class CurveFitter:
     @property
     def parameters(self) -> np.ndarray:
         """Current best-fit parameters (set by fit())."""
-        if not hasattr(self, "_last_result"):
+        if self._last_result is None:
             raise RuntimeError("No fit result available. Call fit() first.")
         return self._last_result.parameters
 
     @property
     def covariance(self) -> np.ndarray:
         """Current covariance matrix (set by fit())."""
-        if not hasattr(self, "_last_result"):
+        if self._last_result is None:
             raise RuntimeError("No fit result available. Call fit() first.")
         return self._last_result.covariance
 

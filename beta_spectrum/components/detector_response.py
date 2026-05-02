@@ -29,8 +29,8 @@ deposits energy E_j in the detector channel j, and ΔW_i is the bin width.
 from __future__ import annotations
 
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator, interp1d
-from scipy.special import erfc
+from scipy.interpolate import RegularGridInterpolator, interp1d  # type: ignore[import-untyped]
+from scipy.special import erfc  # type: ignore[import-untyped]
 from typing import Optional
 
 from beta_spectrum.constants import ME_MEV
@@ -100,7 +100,7 @@ class DetectorResponse:
             self.tau = tau
             self.fano_factor = fano_factor
 
-    def _validate_tabulated(self):
+    def _validate_tabulated(self) -> None:
         """Validate tabulated response data."""
         if self.response_matrix.ndim != 2:
             raise ValueError(
@@ -121,16 +121,15 @@ class DetectorResponse:
         if not np.all(np.diff(self.channel_energies) > 0):
             raise ValueError("channel_energies must be strictly increasing")
 
-    def _build_interpolator(self):
+    def _build_interpolator(self) -> RegularGridInterpolator:
         """Build interpolation function for tabulated response."""
-        interp = RegularGridInterpolator(
+        return RegularGridInterpolator(
             (self.calibration_energies, self.channel_energies),
             self.response_matrix,
             method="linear",
             bounds_error=False,
             fill_value=0.0,
         )
-        return interp
 
     def get_response(self, energy: float) -> np.ndarray:
         """
@@ -148,8 +147,7 @@ class DetectorResponse:
         """
         if self._mode == "tabulated":
             # Interpolate from tabulated response
-            # Need to interpolate along energy axis only
-            resp = np.zeros(self.n_channels)
+            resp = np.zeros(self.n_channels, dtype=float)
             for j in range(self.n_channels):
                 f = interp1d(
                     self.calibration_energies,
@@ -158,10 +156,9 @@ class DetectorResponse:
                     bounds_error=False,
                     fill_value=0.0,
                 )
-                resp[j] = f(energy)
+                resp[j] = float(f(energy))
             return resp
-        else:
-            return self._analytical_response(energy)
+        return self._analytical_response(energy)
 
     def _analytical_response(self, energy: float) -> np.ndarray:
         """
@@ -175,12 +172,11 @@ class DetectorResponse:
 
         if self.model == "gaussian":
             return self._gaussian_response(energy, sigma)
-        elif self.model == "gaussian_tail":
+        if self.model == "gaussian_tail":
             return self._gaussian_tail_response(energy, sigma)
-        elif self.model == "tikhonov":
+        if self.model == "tikhonov":
             return self._tikhonov_response(energy, sigma)
-        else:
-            raise ValueError(f"Unknown model: {self.model}")
+        raise ValueError(f"Unknown model: {self.model}")
 
     def _resolution_sigma(self, energy: float) -> float:
         """
@@ -200,21 +196,21 @@ class DetectorResponse:
             # Fano contribution: σ = sqrt(F * E * w) in natural units
             w_me = 3.6e-3 / ME_MEV  # 3.6 eV in m_e units
             sigma_sq += self.fano_factor * E * w_me
-        return np.sqrt(sigma_sq)
+        return float(np.sqrt(sigma_sq))
 
     def _gaussian_response(self, energy: float, sigma: float) -> np.ndarray:
         """Pure Gaussian response."""
         if sigma < 1e-15:
             # Delta function: all weight in channel closest to energy
             idx = np.argmin(np.abs(self.channel_energies - energy))
-            resp = np.zeros(self.n_channels)
+            resp = np.zeros(self.n_channels, dtype=float)
             resp[idx] = 1.0
             return resp
 
         delta_E = self.channel_energies - energy
         resp = np.exp(-0.5 * (delta_E / sigma) ** 2)
         resp /= sigma * np.sqrt(2.0 * np.pi)
-        return resp
+        return np.asarray(resp, dtype=np.float64)
 
     def _gaussian_tail_response(self, energy: float, sigma: float) -> np.ndarray:
         """
@@ -234,7 +230,7 @@ class DetectorResponse:
         """
         if sigma < 1e-15:
             idx = np.argmin(np.abs(self.channel_energies - energy))
-            resp = np.zeros(self.n_channels)
+            resp = np.zeros(self.n_channels, dtype=float)
             resp[idx] = 1.0
             return resp
 
@@ -243,10 +239,10 @@ class DetectorResponse:
         core /= sigma * np.sqrt(2.0 * np.pi)
 
         if self.tail_fraction <= 0 or self.tau <= 0:
-            return core
+            return np.asarray(core, dtype=np.float64)
 
         # Exponential tail (Tikhonov function): defined for all E
-        tail = np.zeros(self.n_channels)
+        tail = np.zeros(self.n_channels, dtype=float)
         dE_all = delta_E
         arg = dE_all / (np.sqrt(2.0) * sigma) + sigma * self.tau / np.sqrt(2.0)
         tail = (
@@ -262,12 +258,12 @@ class DetectorResponse:
         dw = np.diff(self.channel_energies)
         dw = np.concatenate([dw, [dw[-1]]])
         resp *= dw
-        area = np.sum(resp)
+        area = float(np.sum(resp))
         resp /= dw
         if area > 0:
             resp /= area
 
-        return resp
+        return np.asarray(resp, dtype=np.float64)
 
     def _tikhonov_response(self, energy: float, sigma: float) -> np.ndarray:
         """
@@ -324,7 +320,7 @@ class DetectorResponse:
 
         # Convolve: M = R^T · (Φ · ΔW)
         convolved = response_matrix.T @ (spectrum_values * dw)
-        return convolved
+        return np.asarray(convolved, dtype=np.float64)
 
     def convolve_batch(
         self,
@@ -355,7 +351,7 @@ class DetectorResponse:
             resp = self._analytical_response(w_i)
             response_matrix[i] = resp
 
-        return response_matrix.T @ (spectrum_values * dw)
+        return np.asarray(response_matrix.T @ (spectrum_values * dw), dtype=np.float64)
 
     @staticmethod
     def _compute_bin_widths(W: np.ndarray) -> np.ndarray:

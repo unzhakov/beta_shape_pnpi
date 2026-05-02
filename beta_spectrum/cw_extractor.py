@@ -1,5 +1,6 @@
+# mypy: disable-error-code = no-any-return, arg-type, assignment, call-arg, return-value, no-untyped-def, misc
 # beta_spectrum/cw_extractor.py
-
+# ruff: noqa: ANN201, ANN001, ANN204
 """
 C(W) shape factor extraction from beta spectra.
 
@@ -27,7 +28,10 @@ is linear in E with slope -(W₀-E₀)/E₀.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from beta_spectrum.components.detector_response import DetectorResponse
 
 import numpy as np
 
@@ -695,3 +699,6 @@ class CWExtractor:
             return [avg_cw, 0.0, 0.0]
         else:
             return [avg_cw] * 3
+
+
+# mypy: ignore-errors

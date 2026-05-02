@@ -41,6 +41,7 @@ where = ["."]
 [tool.mypy]
 python_version = "3.10"
 strict = true
+exclude = ["notebooks", "scripts/notebook_plots.py"]
 
 [tool.black]
 line-length = 88

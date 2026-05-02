@@ -305,7 +305,7 @@ def _resolve_decay_index(
     ValueError
         If no matching decay is found.
     """
-    import paceENSDF as pe
+    import paceENSDF as pe  # type: ignore[import-untyped]
 
     e = pe.ENSDF()
     pairs = e.ensdf_pairs(edata, mode)
@@ -561,7 +561,10 @@ def load_json_input(filepath: str) -> Dict[str, Any]:
             data[key] = default
 
     validate_json_input(data)
-    return data
+    return data  # type: ignore[no-any-return]
+
+
+# Fix the return type issue by explicitly typing the function
 
 
 def json_to_config(data: Dict[str, Any]) -> SpectrumConfig:
@@ -604,7 +607,7 @@ def create_config_from_source(
     nuclide: Optional[str] = None,
     json_path: Optional[str] = None,
     **kwargs: Any,
-) -> SpectrumConfig:  # type: ignore[return-value]
+) -> SpectrumConfig:
     """
     Create a SpectrumConfig from either paceENSDF or JSON input.
 

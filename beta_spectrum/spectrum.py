@@ -1,7 +1,9 @@
 # spectrum.py
+from __future__ import annotations
+
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
 from beta_spectrum.base import SpectrumComponent
@@ -75,10 +77,10 @@ class BetaSpectrum:
         """
         Calculate total spectrum as a product of enabled components
         """
-        result = np.ones_like(W)
+        result: np.ndarray = np.ones_like(W, dtype=float)
         for comp in self.components:
-            result *= comp(W)
-        return result
+            result = result * comp(W)
+        return result.astype(np.float64)
 
     def _get_component_name(self, comp: SpectrumComponent) -> str:
         """
@@ -97,12 +99,12 @@ class BetaSpectrum:
         return components_dict
 
     @classmethod
-    def from_config(cls, config: SpectrumConfig) -> "BetaSpectrum":
+    def from_config(cls, config: SpectrumConfig) -> BetaSpectrum:
         """
         Create a BetaSpectrum from configuration
         """
-        components = []
-        W0 = T_to_W(config.endpoint_MeV)
+        components: List[SpectrumComponent] = []
+        W0 = float(T_to_W(config.endpoint_MeV))
 
         if config.use_phase_space:
             components.append(PhaseSpace(W0=W0, transition_type=config.transition_type))
@@ -140,7 +142,7 @@ class BetaSpectrum:
         )
         W = T_to_W(kinetic_MeV)
 
-        return W, kinetic_MeV
+        return W, kinetic_MeV.astype(np.float64)
 
     @staticmethod
     def create_detector_from_config(
@@ -173,7 +175,7 @@ class BetaSpectrum:
 
         # Extend range to cover endpoint
         if channel_range[1] < W0:
-            channel_range = (channel_range[0], W0 + 0.05)
+            channel_range = (channel_range[0], float(W0 + 0.05))
 
         detector = DetectorResponse.from_gaussian_params(
             channel_energy_range=channel_range,
@@ -277,12 +279,13 @@ class BetaSpectrumAnalyzer:
         self.spectrum = spectrum
         self.config = config
         self.W, self.energies_MeV = spectrum.get_energy_grid(config)
-        self._components_cache = None
+        self._components_cache: Optional[Dict[str, np.ndarray]] = None
 
     @property
     def components(self) -> Dict[str, np.ndarray]:
         if self._components_cache is None:
             self._components_cache = self.spectrum.calculate_components(self.W)
+        assert self._components_cache is not None
         return self._components_cache
 
     def total_spectrum(self, normalize: bool = True) -> np.ndarray:
@@ -340,7 +343,7 @@ class BetaSpectrumAnalyzer:
 
         return convolved
 
-    def plot_analysis(self, save_path: Optional[str] = None):
+    def plot_analysis(self, save_path: Optional[str] = None) -> None:
         """
         Create visualization of the spectrum and all correction.
         """
@@ -580,21 +583,24 @@ class BetaSpectrumAnalyzer:
         ]
         return symbols[Z] if Z < len(symbols) else f"Z{Z}"
 
-    def export_to_csv(self, filename: str):
+    def export_to_csv(self, filename: str) -> None:
         total = self.total_spectrum(normalize=True)
         components = self.components
 
-        data = {"energy_MeV": self.energies_MeV, "spectrum": total}
+        data: Dict[str, np.ndarray] = {
+            "energy_MeV": self.energies_MeV,
+            "spectrum": total,
+        }
         for name, values in components.items():
             data[name] = values
 
-        import pandas as pd
+        import pandas as pd  # type: ignore[import-untyped]
 
         df = pd.DataFrame(data)
         df.to_csv(filename, index=False, float_format="%.4e")
         print(f"Spectrum exported to {filename}")
 
-    def get_data(self) -> Dict:
+    def get_data(self) -> Dict[str, Any]:
         """Get all numerical data for custom analysis."""
         return {
             "energies_MeV": self.energies_MeV,

@@ -57,4 +57,4 @@ class PhaseSpace(SpectrumComponent):
                 p_nu**6 + 7 * p_nu**4 * p_e**2 + 7 * p_nu**2 * p_e**4 + p_e**6
             )
 
-        return phase_space * forbid_factor
+        return np.asarray(phase_space * forbid_factor, dtype=np.float64)

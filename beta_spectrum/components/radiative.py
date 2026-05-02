@@ -1,6 +1,6 @@
 # components/radiative.py
 import numpy as np
-from scipy.special import spence
+from scipy.special import spence  # type: ignore[import-untyped]
 
 from beta_spectrum.base import SpectrumComponent
 from beta_spectrum.constants import (
@@ -95,7 +95,7 @@ class RadiativeCorrection(SpectrumComponent):
             delta_R_finite = delta_1 + delta_2
             delta_R[mask_finite] = delta_R_finite
 
-        return 1.0 + delta_R
+        return np.asarray(1.0 + delta_R, dtype=np.float64)
 
     def _delta_1(self, W: np.ndarray) -> np.ndarray:
         """
@@ -163,7 +163,10 @@ class RadiativeCorrection(SpectrumComponent):
 
         g_func = const_term + dilog_term + term2 + term3
 
-        return self._outer_normalization * (g_func - self._subtraction_term)
+        return np.asarray(
+            self._outer_normalization * (g_func - self._subtraction_term),
+            dtype=np.float64,
+        )
 
     def _delta_2(self, W: np.ndarray) -> np.ndarray:
         """
@@ -189,7 +192,7 @@ class RadiativeCorrection(SpectrumComponent):
         # Total O(Z*alpha^2) correction
         delta_2 = self.Z * ALPHA**2 * (Delta_1_4 + self._delta_F)
 
-        return delta_2
+        return np.asarray(delta_2, dtype=np.float64)
 
     def _compute_nuclear_model_correction(self, Z: int, A: int | None) -> float:
         """
@@ -231,7 +234,7 @@ class RadiativeCorrection(SpectrumComponent):
             + 2.0 * ALPHA / (2.0 + 3.0 * ALPHA)
         )
 
-        delta_F = np.log(M_over_Lambda) - kappa_1
+        delta_F = float(np.log(M_over_Lambda) - kappa_1)
         return delta_F
 
     def _safe_beta(self, W: np.ndarray) -> np.ndarray:

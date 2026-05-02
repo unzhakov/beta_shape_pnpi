@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 
 from beta_spectrum.base import SpectrumComponent
@@ -18,12 +20,12 @@ class ScreeningCorrection(SpectrumComponent):
 
     def __init__(
         self,
-        fermi_function,
-        V0: float = None,
+        fermi_function: Any,
+        V0: float | None = None,
         Ws: float = 1.01,
         Delta: float = 0.01,
         eps: float = 1e-6,
-        C=0.015,
+        C: float = 0.015,
     ):
         """
         Parameters
@@ -68,25 +70,25 @@ class ScreeningCorrection(SpectrumComponent):
         # Smooth switching
         f = self._switching_function(W)
 
-        return 1.0 + f * (S_raw - 1.0)
+        return np.asarray(1.0 + f * (S_raw - 1.0), dtype=np.float64)
 
     # --------------------
     # Helpers
     # --------------------
-    def _screened_energy(self, W):
+    def _screened_energy(self, W: np.ndarray) -> np.ndarray:
         """
         Apply energy shift W -> W_tilde with safe numerical floor
         """
         W_tilde = W - self.V0
         return np.maximum(W_tilde, 1.0 + self.eps)
 
-    def _switching_function(self, W):
+    def _switching_function(self, W: np.ndarray) -> np.ndarray:
         """
         Logistic switching function
         """
         return 1.0 / (1.0 + np.exp((self.Ws - W) / self.Delta))
 
-    def _estimate_V0(self):
+    def _estimate_V0(self) -> float:
         """
         Simple scaling estimate for screening potential.
 
@@ -94,4 +96,4 @@ class ScreeningCorrection(SpectrumComponent):
 
         C ~ 0.01-0.02 (tunable constant)
         """
-        return ALPHA * self.Z ** (4.0 / 3.0) * self._C
+        return float(ALPHA * self.Z ** (4.0 / 3.0) * self._C)

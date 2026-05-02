@@ -1,6 +1,6 @@
 # components/fermi.py
 import numpy as np
-from scipy.special import loggamma
+from scipy.special import loggamma  # type: ignore[import-untyped]
 
 from ..base import SpectrumComponent
 from ..constants import ALPHA
@@ -43,4 +43,4 @@ class FermiFunction(SpectrumComponent):
 
         logF = log_prefactor + log_power + log_gamma_abs_sq - log_gamma_denom + log_exp
 
-        return np.exp(logF)
+        return np.asarray(np.exp(logF), dtype=np.float64)
