@@ -146,18 +146,18 @@ ______________________________________________________________________
 
 ### B8. CLI & Output Improvements
 
-- [ ] Implement structured logging system
-  - Log to stdout with configurable verbosity levels (INFO, DEBUG, WARNING)
+- [x] Implement structured logging system
+  - Log to stdout with configurable verbosity levels (-v=INFO, -vv=DEBUG)
   - Visualize workflow steps: data loading, parameter resolution, calculation progress
   - Log all used parameters: Z_parent, Z_daughter, A_number, endpoint, transition type, enabled corrections
   - Optional log file output with timestamped filename
   - Integrate Python `logging` module with custom formatter
-- [ ] Add metadata header to CSV output files
+- [x] Add metadata header to CSV output files
   - Date and time of calculation (ISO 8601 format)
   - Nuclide information: parent/daughter symbol, Z, A
   - Decay/transition info: endpoint energy, transition type, forbiddenness
   - Calculation parameters: energy step, enabled corrections, detector settings
-  - Software version and git commit hash (if available)
+  - Software version and git commit hash (7 chars)
   - Format: YAML-style comments at top of CSV file
 - [ ] Optimize CLI argument design and add sanity checks
   - Auto-deduce `transition_type` from `decay_type` and nuclear data — remove as explicit CLI parameter
@@ -169,7 +169,9 @@ ______________________________________________________________________
     - Warn if decay_type contradicts Z values (e.g., beta+ with Z_daughter > Z_parent)
     - Validate endpoint_MeV > 0 and endpoint_MeV > level_energy_keV/1000
     - Cross-check transition_type against ENSDF forbiddenness (if paceENSDF source)
-  - Add `--dry-run` option to validate input and display resolved parameters without calculation
+- [x] Add `--dry-run` option to validate input and display resolved parameters without calculation
+- [x] Add `--version` flag
+- [x] Add `-q/--quiet` flag to suppress terminal output
 
 ______________________________________________________________________
 
@@ -195,8 +197,8 @@ ______________________________________________________________________
 ## Current Status
 
 **Version:** 0.3.0\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration. Comprehensive test suite (167 tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers. Comprehensive test suite (195 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline.
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B8 — CLI & output improvements (logging, CSV headers, dry-run, version).
 
 **Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).
