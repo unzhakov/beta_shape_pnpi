@@ -175,9 +175,9 @@ ______________________________________________________________________
 
 ## Deferred (Not Planned)
 
-### Nuclear Recoil Correction (`recoil.py`)
+### Additional Corrections
 
-Not implementing at this time. The recoil correction (weak magnetism, recoil kinematics) is a small O(q/M_N) effect (~0.1%) that is subdominant to the shape factor C(W) we aim to extract. In the ⁹⁹Tc analysis, the shape factor absorbs all unmodelled energy-dependent effects — including recoil — so implementing recoil explicitly is unnecessary for the scientific goal.
+Not implementing at this time. Additional corrections (weak magnetism, recoil kinematics, etc.) require a complex implementation with project-wide consequences. This is a far-future plan, irrelevant to the current ⁹⁹Tc analysis goal where the shape factor C(W) absorbs all unmodelled energy-dependent effects.
 
 ### Nuclear Shape Factors C(Z,W)
 
@@ -194,9 +194,9 @@ ______________________________________________________________________
 
 ## Current Status
 
-**Version:** 0.2.0\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. Comprehensive test suite (106 tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Version:** 0.3.0\
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration. Comprehensive test suite (167 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines.
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline.
 
-**Next immediate step:** A4 — implement fitter routine to extract experimental C(W) from data.
+**Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).

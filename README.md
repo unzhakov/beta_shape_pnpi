@@ -29,7 +29,6 @@ beta_shape_pnpi/
 ├── pyproject.toml
 ├── docs/                          # Obsidian knowledge base (physics theory & references)
 │   ├── README.md                  # Vault overview + navigation index
-│   ├── Hayen2017_summary.md       # Full paper summary backbone
 │   ├── 00-beta-spectrum-overview.md    # Master equation, all corrections table
 │   ├── 01-fermi-function.md           # Fermi function F₀(Z,W)
 │   ├── 02-phase-space.md              # Phase space p·W·(W₀−W)²
@@ -38,10 +37,10 @@ beta_shape_pnpi/
 │   ├── 05-exchange-correction.md      # Electron exchange X(Z,W)
 │   ├── 06-radiative-corrections.md    # Outer radiative δᵣ(W,W₀)
 │   ├── 07-recoil-effects.md           # Weak magnetism, recoil kinematics
+│   ├── 08-detector-response.md        # Detector response models
 │   ├── 10-nuclear-structure.md        # Shape factor C(Z,W), BB vs HS formalisms
 │   ├── 12-atomic-overlap.md           # Bahcall correction r(Z,W)
 │   ├── 13-chemical-effects.md         # Molecular environment effects
-│   └── refs-hayen2017.md              # Key equations reference table, citations
 ├── beta_spectrum/
 │   ├── __init__.py          # Public API: constants, utilities, classes
 │   ├── base.py              # Abstract SpectrumComponent base class
@@ -53,14 +52,13 @@ beta_shape_pnpi/
 │   ├── fitter.py            # χ² curve fitting for C(W) extraction
 │   ├── cw_extractor.py      # C(W) shape factor extraction + gV/gA analysis
 │   └── components/
-│       │   ├── phase_space.py       ✓ Phase space shape (p·W·(W₀−W)²)
-│       │   ├── fermi.py             ✓ Coulomb correction (loggamma for stability)
-│       │   ├── finite_size.py       ✓ L0 expansion + charge distribution U term
-│       │   ├── screening.py         ✓ Atomic electron screening (ratio method)
-│       │   ├── exchange.py          ✓ Hayen-2018 empirical fit coefficients
-│       │   ├── radiative.py         ✓ Outer radiative corrections, soft-photon resummation
-│       │   ├── detector_response.py ✓ Analytical detector response models
-│       │   └── recoil.py            ✗ Not yet implemented
+│       │   ├── phase_space.py           ✓ Phase space shape (p·W·(W₀−W)²)
+│       │   ├── fermi.py                 ✓ Coulomb correction (loggamma for stability)
+│       │   ├── finite_size.py           ✓ L0 expansion + charge distribution U term
+│       │   ├── screening.py             ✓ Atomic electron screening (ratio method)
+│       │   ├── exchange.py              ✓ Hayen-2018 empirical fit coefficients
+│       │   ├── radiative.py             ✓ Outer radiative corrections, soft-photon resummation
+│       │   └── detector_response.py     ✓ Analytical detector response models
 ├── tests/
 │   ├── test_radiative.py        # Radiative correction tests (24 tests)
 │   ├── test_exchange.py         # Exchange correction tests
@@ -148,7 +146,6 @@ ______________________________________________________________________
 | Exchange              | `exchange.py`    |      ✓ | Hayen-2018 Table X empirical fit (CSV data for Z=2..120)                                                       |
 | Radiative             | `radiative.py`   |      ✓ | Outer radiative corrections (Hayen Eq. 47–53), soft-photon resummation at endpoint                             |
 | Detector Response     | `detector_response.py` | ✓ | Analytical models: Gaussian, Gaussian+tail, Tikhonov, tabulated                                               |
-| Recoil                | `recoil.py`      |      ✗ | Stub only, not yet implemented                                                                                 |
 
 ## Additional Modules
 
