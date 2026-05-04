@@ -31,12 +31,14 @@ git checkout -b dev/<feature-name>   # always create a new branch
 
 Branch naming: `dev/<short-description>` (e.g., `dev/recoil-correction`)
 
+
 ### Merging Rules
 
 - All work happens on `dev/*` branches — never commit directly to `main`
 - Tests MUST pass before any merge attempt
 - Merging to `main` requires a pull request with passing CI checks
 - If tests fail, fix them on the dev branch — do NOT merge broken code
+- Before merging always update TODO.md and README.md
 
 ## 3. Test-Driven Development
 
@@ -45,6 +47,8 @@ Branch naming: `dev/<short-description>` (e.g., `dev/recoil-correction`)
 1. **Red** — write a failing test that expresses the desired behavior
 2. **Green** — implement minimal code to make the test pass
 3. **Refactor** — clean up code while keeping all tests green
+
+Commit work-in-progress changes to development branch.
 
 ### Test Conventions
 
@@ -128,6 +132,7 @@ When working on this project, agents must:
 - [ ] Type checks pass (`mypy`)
 - [ ] Update version in `pyproject.toml`
 - [ ] Update `Development Status` section in `README.md`
+- [ ] Update `TODO.md` marking corresponding items as complete.
 - [ ] Commit changes
 - [ ] Create git tag: `git tag v<version>`
 - [ ] Push to remote
