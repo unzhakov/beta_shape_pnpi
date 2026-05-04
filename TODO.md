@@ -89,13 +89,15 @@ ______________________________________________________________________
 
 ### B2. Input Flexibility
 
-- [ ] Generalize parameter inputs via custom input file (YAML/JSON)
-  - Declare isotope, transition type, detector parameters
-  - Toggle corrections on/off per-component
-  - Reproducible calculation configurations
-- [ ] Retrieve parameters directly from ENSDF database
-  - Auto-populate W0, Z, A, transition type from isotope name
-  - Reduce manual configuration errors
+- [x] ~~Generalize parameter inputs via custom input file (YAML/JSON)~~
+  - ~~Declare isotope, transition type, detector parameters~~
+  - ~~Toggle corrections on/off per-component~~
+  - ~~Reproducible calculation configurations~~
+  - ~~Implemented: `load_json_input()`, `json_to_config()`, `DEFAULT_JSON_SCHEMA` with full detector param support, CLI `--input` flag~~
+- [x] ~~Retrieve parameters directly from ENSDF database~~
+  - ~~Auto-populate W0, Z, A, transition type from isotope name~~
+  - ~~Reduce manual configuration errors~~
+  - ~~Implemented: `get_decay_info_from_paceENSDF()` returns DecayInfo with Z_parent, Z_daughter, A_number, endpoint_MeV, transition_type, forbiddenness_code, half_life, branches; CLI `--nuclide` uses this automatically~~
 
 ### B3. Multiple Branch Decays
 
@@ -201,8 +203,8 @@ ______________________________________________________________________
 ## Current Status
 
 **Version:** 0.3.0\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers. Comprehensive test suite (195 tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers. JSON input with full detector param support. Comprehensive test suite (195 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B8 — CLI & output improvements (logging, CSV headers, dry-run, version).
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B8 — CLI & output improvements (logging, CSV headers, dry-run, version).
 
 **Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).
