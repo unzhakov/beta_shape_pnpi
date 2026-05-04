@@ -134,24 +134,11 @@ analyzer.export_to_csv("output.csv")   # Export data to CSV
 
 ______________________________________________________________________
 
-## Components
+## Implementation Status
 
-| Component             | Module           | Status | Description                                                                                                    |
-| --------------------- | ---------------- | -----: | -------------------------------------------------------------------------------------------------------------- |
-| Phase Space           | `phase_space.py` |      ✓ | Baseline $p W (W_0 - W)^2$ with transition-type-dependent forbidden factors and optional neutrino mass support |
-| Fermi Function        | `fermi.py`       |      ✓ | Relativistic Coulomb correction via `scipy.special.loggamma`                                                   |
-| Finite Size L0        | `finite_size.py` |      ✓ | Low-Z expansion from Hayen et al. with prefactor                                                               |
-| Charge Distribution U | `finite_size.py` |      ✓ | Second-order $(1/5)(\alpha Z W R)^2$ correction                                                               |
-| Screening             | `screening.py`   |      ✓ | Ratio method with logistic switching, energy shift $V_0$                                                       |
-| Exchange              | `exchange.py`    |      ✓ | Hayen-2018 Table X empirical fit (CSV data for Z=2..120)                                                       |
-| Radiative             | `radiative.py`   |      ✓ | Outer radiative corrections (Hayen Eq. 47–53), soft-photon resummation at endpoint                             |
-| Detector Response     | `detector_response.py` | ✓ | Analytical models: Gaussian, Gaussian+tail, Tikhonov, tabulated                                               |
+For a complete list of implemented and planned features, see [TODO.md](TODO.md). Key highlights:
 
-## Additional Modules
-
-| Module                | Description                                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `nuclear_data.py`     | paceENSDF integration + JSON input for automated `SpectrumConfig` generation                                   |
-| `cli.py`              | Command-line interface (`bs_pnpi`) for quick spectrum calculations                                             |
-| `fitter.py`           | χ² curve fitting for C(W) shape factor extraction from experimental data                                       |
-| `cw_extractor.py`     | C(W) extraction pipeline with gV/gA coupling constant analysis                                                 |
+- **Physics corrections**: phase space, Fermi function, finite size, screening, exchange, radiative (with delta_cut resummation)
+- **Detector response**: Gaussian, Gaussian+tail, Tikhonov models with tabulated support
+- **Analysis tools**: χ² fitter, C(W) extraction pipeline, Kurie plot analysis
+- **CLI**: `bs_pnpi` with paceENSDF integration, structured logging, CSV metadata headers

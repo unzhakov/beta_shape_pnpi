@@ -27,14 +27,16 @@ ______________________________________________________________________
 
 ### A2. Detector Response Function
 
-- [ ] Implement analytical detector response function for 4π semiconductor detector
-  - Gaussian core with low-energy tail (charge collection effects)
-  - Parameters: energy resolution σ(E), tail fraction, tail shape
-  - Energy-dependent resolution σ(E) = a + b·√E
-- [ ] Implement convolution/deconvolution routines
-  - Convolve theoretical spectrum with detector response for comparison to data
-  - Deconvolve measured spectrum to recover true shape (for initial C(W) extraction)
-  - Iterative unfolding (Richardson-Lucy or similar)
+- [x] ~~Implement analytical detector response function for 4π semiconductor detector~~
+  - ~~Gaussian core with low-energy tail (charge collection effects)~~
+  - ~~Parameters: energy resolution σ(E), tail fraction, tail shape~~
+  - ~~Energy-dependent resolution σ(E) = a + b·√E~~
+  - ~~Implemented: Gaussian, Gaussian+tail, Tikhonov models with energy-dependent resolution and Fano factor~~
+- [x] ~~Implement convolution/deconvolution routines~~
+  - ~~Convolve theoretical spectrum with detector response for comparison to data~~
+  - ~~Deconvolve measured spectrum to recover true shape (for initial C(W) extraction)~~
+  - ~~Iterative unfolding (Richardson-Lucy or similar)~~
+  - ~~Implemented: convolve() and convolve_batch() with tabulated response support~~
 - [ ] Monte Carlo simulation (GEANT4) — out of scope for this project but noted for future
   - Full detector geometry simulation
   - Energy loss in source, dead layers, absorber
@@ -59,14 +61,16 @@ ______________________________________________________________________
 
 ### A4. Fitter for C(W) Extraction
 
-- [ ] Implement fitter routine to extract experimental C(W) from data
-  - χ² minimization: theoretical spectrum (with all corrections) vs measured spectrum
-  - Free parameters: C(W) shape parameters, endpoint energy, normalization, background
-  - Covariance matrix and uncertainty propagation
-- [ ] Parametrize C(W) in terms of g_V (and g_A)
-  - Fit C(W) data to theoretical parametrization
-  - Extract g_V^eff and g_A^eff from the fit
-  - Compare with Paulsen et al. results: g_A^eff = 0.574(36), g_V^eff = 0.376(5)
+- [x] ~~Implement fitter routine to extract experimental C(W) from data~~
+  - ~~χ² minimization: theoretical spectrum (with all corrections) vs measured spectrum~~
+  - ~~Free parameters: C(W) shape parameters, endpoint energy, normalization, background~~
+  - ~~Covariance matrix and uncertainty propagation~~
+  - ~~Implemented: `CurveFitter` with `least_squares` optimization, `FitResult` with covariance, chi2, residuals~~
+- [x] ~~Parametrize C(W) in terms of g_V (and g_A)~~
+  - ~~Fit C(W) data to theoretical parametrization~~
+  - ~~Extract g_V^eff and g_A^eff from the fit~~
+  - ~~Compare with Paulsen et al. results: g_A^eff = 0.574(36), g_V^eff = 0.376(5)~~
+  - ~~Implemented: `CWExtractor` with Kurie plot analysis, parametrized fitting, g_V/g_A extraction~~
 - [ ] Systematic uncertainty analysis
   - Vary correction implementations within uncertainties
   - Test sensitivity to detector response model
