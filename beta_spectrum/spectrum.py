@@ -1,6 +1,8 @@
 # spectrum.py
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
@@ -14,6 +16,7 @@ from beta_spectrum.components.screening import ScreeningCorrection
 from beta_spectrum.components.exchange import ExchangeCorrection
 from beta_spectrum.components.radiative import RadiativeCorrection
 
+from beta_spectrum.logging_utils import get_git_short_hash
 from beta_spectrum.utils import T_to_W
 from beta_spectrum.constants import ME_MEV
 
@@ -67,11 +70,23 @@ class BetaSpectrum:
     Precise beta spectrum calculator.
 
     Combines basic spectrum shape (fermi * phase_space) with mutplicative corrections.
+
+    Parameters
+    ----------
+    components : List[SpectrumComponent]
+        List of enabled spectral components.
+    logger : logging.Logger, optional
+        Logger for debug/info output.
     """
 
-    def __init__(self, components: List[SpectrumComponent]):
+    def __init__(
+        self,
+        components: List[SpectrumComponent],
+        logger: Optional[logging.Logger] = None,
+    ):
         self.components = components
         self._component_names = [self._get_component_name(c) for c in components]
+        self._logger = logger
 
     def __call__(self, W: np.ndarray) -> np.ndarray:
         """
@@ -99,9 +114,18 @@ class BetaSpectrum:
         return components_dict
 
     @classmethod
-    def from_config(cls, config: SpectrumConfig) -> BetaSpectrum:
+    def from_config(
+        cls, config: SpectrumConfig, logger: Optional[logging.Logger] = None
+    ) -> BetaSpectrum:
         """
-        Create a BetaSpectrum from configuration
+        Create a BetaSpectrum from configuration.
+
+        Parameters
+        ----------
+        config : SpectrumConfig
+            Configuration with decay parameters and correction toggles.
+        logger : logging.Logger, optional
+            Logger for progress output.
         """
         components: List[SpectrumComponent] = []
         W0 = float(T_to_W(config.endpoint_MeV))
@@ -131,7 +155,7 @@ class BetaSpectrum:
         if config.use_radiative:
             components.append(RadiativeCorrection(W0=W0, use_endpoint_resummation=True))
 
-        return cls(components)
+        return cls(components, logger=logger)
 
     def get_energy_grid(self, config: SpectrumConfig) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -221,6 +245,13 @@ class BetaSpectrum:
 
         theoretical_spectrum = self(W)
 
+        if self._logger:
+            self._logger.debug(
+                "Convolution: %d channels, %d spectrum points",
+                len(detector_response.channel_energies),
+                len(W),
+            )
+
         convolved = detector_response.convolve(W, theoretical_spectrum, normalize=True)
         return convolved
 
@@ -270,16 +301,31 @@ class BetaSpectrum:
 class BetaSpectrumAnalyzer:
     """
     Introspection, analysis and debugging tools for BetaSpectrum.
+
+    Parameters
+    ----------
+    spectrum : BetaSpectrum
+        The spectrum to analyze.
+    config : SpectrumConfig
+        Configuration used to create the spectrum.
+    logger : logging.Logger, optional
+        Logger for progress output.
     """
 
-    def __init__(self, spectrum: BetaSpectrum, config: SpectrumConfig):
+    def __init__(
+        self,
+        spectrum: BetaSpectrum,
+        config: SpectrumConfig,
+        logger: Optional[logging.Logger] = None,
+    ):
         """
-        Initialize analyzer with a spectrum and configuration
+        Initialize analyzer with a spectrum and configuration.
         """
         self.spectrum = spectrum
         self.config = config
         self.W, self.energies_MeV = spectrum.get_energy_grid(config)
         self._components_cache: Optional[Dict[str, np.ndarray]] = None
+        self._logger = logger
 
     @property
     def components(self) -> Dict[str, np.ndarray]:
@@ -583,9 +629,64 @@ class BetaSpectrumAnalyzer:
         ]
         return symbols[Z] if Z < len(symbols) else f"Z{Z}"
 
-    def export_to_csv(self, filename: str) -> None:
+    def export_to_csv(self, filename: str, source_type: str = "unknown") -> None:
+        """
+        Export spectrum data to CSV with metadata header.
+
+        Parameters
+        ----------
+        filename : str
+            Output CSV file path.
+        source_type : str
+            Data source type (paceENSDF, json, cli) for the header.
+        """
         total = self.total_spectrum(normalize=True)
         components = self.components
+
+        # Build enabled corrections list
+        enabled = []
+        if self.config.use_phase_space:
+            enabled.append("phase_space")
+        if self.config.use_fermi:
+            enabled.append("fermi")
+        if self.config.use_screening:
+            enabled.append("screening")
+        if self.config.use_finite_size:
+            enabled.append("finite_size")
+        if self.config.use_charge_dist:
+            enabled.append("charge_dist")
+        if self.config.use_radiative:
+            enabled.append("radiative")
+        if self.config.use_exchange:
+            enabled.append("exchange")
+
+        # Build metadata header
+        from datetime import datetime, timezone
+
+        header_lines = [
+            f"# beta-spectrum v{__import__('beta_spectrum').__version__}",
+            f"# timestamp: {datetime.now(timezone.utc).isoformat()}",
+            f"# source: {source_type}",
+            f"# nuclide: {self.config.Z_parent}->{self.config.Z_daughter}, A={self.config.A_number}",
+            f"# endpoint: {self.config.endpoint_MeV * 1000:.1f} keV",
+            f"# transition: {self.config.transition_type}",
+            f"# corrections: {', '.join(enabled)}",
+            f"# e_step: {self.config.e_step_MeV:.4f} MeV",
+        ]
+
+        if self.config.use_detector_response:
+            header_lines.append(
+                f"# detector: {self.config.detector_model} "
+                f"(sigma={self.config.detector_sigma_a_keV} keV, "
+                f"tail={self.config.detector_tail_fraction})"
+            )
+        else:
+            header_lines.append("# detector: disabled")
+
+        header_lines.append(f"# git_commit: {get_git_short_hash()}")
+
+        # Write CSV with header
+        import pandas as pd
 
         data: Dict[str, np.ndarray] = {
             "energy_MeV": self.energies_MeV,
@@ -594,11 +695,17 @@ class BetaSpectrumAnalyzer:
         for name, values in components.items():
             data[name] = values
 
-        import pandas as pd
-
         df = pd.DataFrame(data)
         df.to_csv(filename, index=False, float_format="%.4e")
-        print(f"Spectrum exported to {filename}")
+
+        # Prepend header
+        with open(filename, "r") as f:
+            content = f.read()
+        with open(filename, "w") as f:
+            f.write("\n".join(header_lines) + "\n" + content)
+
+        if self._logger:
+            self._logger.info("CSV exported to %s with metadata header", filename)
 
     def get_data(self) -> Dict[str, Any]:
         """Get all numerical data for custom analysis."""
