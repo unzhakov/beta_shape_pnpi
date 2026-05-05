@@ -33,7 +33,10 @@ class PhaseSpace(SpectrumComponent):
         if self._logger:
             self._logger.debug(
                 "PhaseSpace: W0=%.5f, transition_type=%s, m_e=%.6f, m_nu=%.6f",
-                W0, transition_type, m_e, m_nu,
+                W0,
+                transition_type,
+                m_e,
+                m_nu,
             )
         if self.tr_type not in ["A", "F1", "F1U", "F2", "F2U", "F3", "F3U", "F4"]:
             raise ValueError(
@@ -66,6 +69,7 @@ class PhaseSpace(SpectrumComponent):
         if self._logger:
             self._logger.debug(
                 "PhaseSpace: output range=[%.6e, %.6e]",
-                result.min(), result.max(),
+                result.min(),
+                result.max(),
             )
         return result

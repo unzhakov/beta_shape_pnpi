@@ -405,7 +405,7 @@ class CurveFitter:
         if bounds is not None:
             ls_kwargs["bounds"] = bounds_array
 
-        result = least_squares(**ls_kwargs)  # type: ignore[arg-type]
+        result = least_squares(**ls_kwargs)
 
         # Compute covariance matrix from Jacobian
         # Cov = (J^T J)^(-1) * χ² / (n - p)

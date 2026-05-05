@@ -3,9 +3,13 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
 
@@ -435,17 +439,11 @@ class BetaSpectrumAnalyzer:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         if show_components:
-            self._plot_debug_view(
-                total, components, save_path, commit, timestamp
-            )
+            self._plot_debug_view(total, components, save_path, commit, timestamp)
         else:
-            self._plot_spectrum_only(
-                total, save_path, commit, timestamp
-            )
+            self._plot_spectrum_only(total, save_path, commit, timestamp)
 
-    def _add_id_textbox(
-        self, ax: plt.Axes, commit: str, timestamp: str
-    ) -> None:
+    def _add_id_textbox(self, ax: "Axes", commit: str, timestamp: str) -> None:
         """Add ID text box with commit hash and timestamp to plot."""
         id_text = f"commit: {commit}  |  {timestamp}"
         ax.text(
@@ -460,7 +458,7 @@ class BetaSpectrumAnalyzer:
             fontfamily="monospace",
         )
 
-    def _add_nuclear_data_header(self, ax: plt.Axes) -> None:
+    def _add_nuclear_data_header(self, ax: "Axes") -> None:
         """Add nuclear data information header to plot."""
         parent = self._element_symbol(self.config.Z_parent)
         daughter = self._element_symbol(self.config.Z_daughter)
@@ -503,7 +501,9 @@ class BetaSpectrumAnalyzer:
             fontsize=8,
             verticalalignment="top",
             horizontalalignment="right",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="none"),
+            bbox=dict(
+                boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="none"
+            ),
         )
 
     def _plot_spectrum_only(
@@ -516,9 +516,7 @@ class BetaSpectrumAnalyzer:
         """Plot only the total spectrum with nuclear data header."""
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        ax.plot(
-            self.energies_MeV, total, "b-", lw=2, label="Normalized spectrum"
-        )
+        ax.plot(self.energies_MeV, total, "b-", lw=2, label="Normalized spectrum")
         ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=11)
         ax.set_ylabel("Normalized Counts", fontsize=11)
         ax.set_title(
