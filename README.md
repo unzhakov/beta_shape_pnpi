@@ -8,7 +8,11 @@ A modular Python package for calculating high-precision **beta decay energy spec
 - Selective inclusion of higher-order corrections via `SpectrumConfig` toggles
 - Clean, composable component architecture
 - Built-in visualization and CSV export via `BetaSpectrumAnalyzer`
+  - Normal mode: single spectrum plot with nuclear data header
+  - Debug mode (`-vv`): 4-panel view with all correction factors
+  - All plots include commit hash and UTC timestamp for traceability
 - Comprehensive scientific reference in [`docs/`](docs/)
+- Debug verification workflow: `bs_pnpi -vv` validates all parameters end-to-end
 
 ______________________________________________________________________
 
@@ -74,6 +78,7 @@ beta_shape_pnpi/
 └── data/
     ├── exchange_coeff.csv         # Tabulated coefficients for X(Z,W), Z=2..120
     └── custom_input_example.json  # Sample JSON input file
+├── output/                      # Test run outputs (gitignored except .gitkeep)
 ```
 
 ______________________________________________________________________
@@ -104,8 +109,11 @@ Defined in `beta_spectrum/spectrum.py`. Orchestrates the calculation:
 Also in `spectrum.py`. Provides debugging and visualization tools:
 
 - `total_spectrum(normalize=True/False)` — computed spectrum array
-- `plot_analysis(save_path=None)` — 4-panel matplotlib figure (spectrum, components, cumulative effect, deviations from unity)
-- `export_to_csv(filename)` — export via pandas DataFrame
+- `plot_analysis(save_path=None, show_components=True)` — plot with two modes:
+  - `show_components=True` (debug mode): 4-panel figure (spectrum, components, cumulative effect, deviations)
+  - `show_components=False` (normal mode): single spectrum plot with nuclear data header
+  - All plots include commit hash and UTC timestamp for traceability
+- `export_to_csv(filename)` — export via pandas DataFrame with YAML-style metadata header
 - `get_data()` — return all numerical data for custom analysis
 
 ______________________________________________________________________
@@ -128,8 +136,9 @@ W, E_MeV = spectrum.get_energy_grid(config)
 values = spectrum(W)
 
 analyzer = BetaSpectrumAnalyzer(spectrum, config)
-analyzer.plot_analysis()          # Show/ save 4-panel figure
-analyzer.export_to_csv("output.csv")   # Export data to CSV
+analyzer.plot_analysis("analysis.png")          # Normal mode (single spectrum plot)
+analyzer.plot_analysis("debug.png", show_components=True)  # Debug mode (4-panel)
+analyzer.export_to_csv("spectrum.csv")   # Export data to CSV
 ```
 
 ______________________________________________________________________
