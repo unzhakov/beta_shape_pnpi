@@ -256,9 +256,9 @@ class CWExtractor:
         if self.config.use_radiative:
             from .components.radiative import RadiativeCorrection
 
-            W0 = T_to_W(self.config.endpoint_MeV)
+            W0_float = float(T_to_W(self.config.endpoint_MeV))
             rad = RadiativeCorrection(
-                W0=W0,
+                W0=W0_float,
                 Z=self.config.Z_parent,
                 A=self.config.A_number,
                 use_endpoint_resummation=True,
@@ -291,9 +291,9 @@ class CWExtractor:
             Extracted C(W) values with uncertainties.
         """
         if endpoint_keV is not None:
-            W0 = T_to_W(endpoint_keV / 1000.0)
+            W0_float = float(T_to_W(endpoint_keV / 1000.0))
         else:
-            W0 = self._determine_endpoint()
+            W0_float = float(self._determine_endpoint())
 
         # Compute theoretical factors (excluding C(W))
         factors = self._theoretical_factors(self.energies_W)
@@ -310,12 +310,12 @@ class CWExtractor:
             product *= factors[key]
 
         # Endpoint factor: (W0 - W)^2
-        endpoint_factor = (W0 - self.energies_W) ** 2
+        endpoint_factor = (W0_float - self.energies_W) ** 2
 
         # Overall normalization
         if normalize_method == "endpoint":
             # Use flux at lowest energy where C(W) ≈ 1 for allowed decay
-            low_E_mask = self.energies_W < W0 - 0.02
+            low_E_mask = self.energies_W < W0_float - 0.02
             if np.any(low_E_mask):
                 C0 = np.median(
                     self.flux[low_E_mask]
@@ -325,7 +325,7 @@ class CWExtractor:
                 C0 = 1.0
         else:
             # Fit normalization
-            C0 = self._fit_normalization(W0, product, endpoint_factor)
+            C0 = self._fit_normalization(W0_float, product, endpoint_factor)
 
         # Extract C(W)
         cw = self.flux / (C0 * product * endpoint_factor)
@@ -347,8 +347,8 @@ class CWExtractor:
             cw_errors=cw_errors,
             flux=self.flux.copy(),
             flux_errors=self.flux_errors.copy(),
-            endpoint_W=W0,
-            endpoint_keV=W_to_T(W0) * 1000.0,
+            endpoint_W=W0_float,
+            endpoint_keV=float(W_to_T(W0_float)) * 1000.0,
             fit_result=None,
         )
 
@@ -585,7 +585,7 @@ class CWExtractor:
             p = momentum(W)
             from .components.fermi import FermiFunction
 
-            F = FermiFunction()(W, self.config.Z_parent)
+            F = FermiFunction(Z=self.config.Z_parent, A=self.config.A_number)(W)
 
             kurie = np.sqrt(flux / (p * W * F))
 
@@ -605,7 +605,7 @@ class CWExtractor:
             except np.linalg.LinAlgError:
                 continue
 
-        return T_to_W(best_endpoint / 1000.0)
+        return float(T_to_W(best_endpoint / 1000.0))
 
     def _fit_kurie_endpoint(self, cw_result: CWExtractionResult) -> FitResult:
         """Fit Kurie plot to determine endpoint energy."""
@@ -620,7 +620,7 @@ class CWExtractor:
         p = momentum(W)
         from .components.fermi import FermiFunction
 
-        F = FermiFunction()(W, self.config.Z_parent)
+        F = FermiFunction(Z=self.config.Z_parent, A=self.config.A_number)(W)
 
         kurie = np.sqrt(flux / (p * W * F))
         E_keV = self.energies_keV[mask]
@@ -639,7 +639,7 @@ class CWExtractor:
         )
 
         return fitter.fit(
-            x0=[np.mean(kurie), -np.mean(kurie) / E_keV[-1]],
+            x0=[float(np.mean(kurie)), float(-np.mean(kurie) / E_keV[-1])],
             param_names=["a", "b"],
         )
 

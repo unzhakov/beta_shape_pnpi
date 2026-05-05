@@ -23,6 +23,14 @@ class SpectrumComponent(ABC):
 
     def __init__(self, logger: Optional["logging.Logger"] = None) -> None:
         self._logger = logger
+        self._log_component_info()
+
+    def _log_component_info(self) -> None:
+        """Log component identification at INFO level."""
+        if self._logger is None:
+            return
+        class_name = self.__class__.__name__
+        self._logger.info("Component initialized: %s", class_name)
 
     @abstractmethod
     def __call__(self, W: ArrayLike) -> ArrayLike:

@@ -15,6 +15,7 @@ class PhaseSpace(SpectrumComponent):
         transition_type: str = "A",
         m_e: float = 1.0,
         m_nu: float = 0.0,
+        logger=None,
     ):
         """
         Create instance of phase space with given decay parameters.
@@ -25,8 +26,18 @@ class PhaseSpace(SpectrumComponent):
             transition_type: allowed or N-order forbidden, should be [A, F1, F1U, F2, F2U, F3, F3U, F4]
             m_e: 1st body mass (electron by default: m_e = 1)
             m_nu:2nd body mass (massless neutrino by default: m_nu = 0)
+            logger: Optional logger for debug/info output
         """
+        super().__init__(logger=logger)
         self.tr_type = transition_type
+        if self._logger:
+            self._logger.debug(
+                "PhaseSpace: W0=%.5f, transition_type=%s, m_e=%.6f, m_nu=%.6f",
+                W0,
+                transition_type,
+                m_e,
+                m_nu,
+            )
         if self.tr_type not in ["A", "F1", "F1U", "F2", "F2U", "F3", "F3U", "F4"]:
             raise ValueError(
                 f"Cannot calculate phase space for forbiddance '{self.tr_type}'.\nShould be [A, F1, F1U, F2, F2U, F3, F3U, F4].\n"
@@ -44,17 +55,21 @@ class PhaseSpace(SpectrumComponent):
         phase_space = p_e * w_e * p_nu * w_nu
 
         if self.tr_type in ["A", "F1"]:
-            forbid_factor = 1
-
+            forbid_factor: float | np.ndarray = 1
         elif self.tr_type in ["F1U", "F2"]:
             forbid_factor = p_nu**2 + p_e**2
-
         elif self.tr_type in ["F2U", "F3"]:
             forbid_factor = p_nu**4 + 3 / 10 * p_nu**2 * p_e**2 + p_e**4
-
-        elif self.tr_type in ["F3U", "F4"]:
+        else:  # F3U, F4
             forbid_factor = (
                 p_nu**6 + 7 * p_nu**4 * p_e**2 + 7 * p_nu**2 * p_e**4 + p_e**6
             )
 
-        return np.asarray(phase_space * forbid_factor, dtype=np.float64)
+        result = np.asarray(phase_space * forbid_factor, dtype=np.float64)
+        if self._logger:
+            self._logger.debug(
+                "PhaseSpace: output range=[%.6e, %.6e]",
+                result.min(),
+                result.max(),
+            )
+        return result

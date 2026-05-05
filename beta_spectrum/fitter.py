@@ -390,18 +390,18 @@ class CurveFitter:
                 np.asarray(bounds[1], dtype=np.float64),
             )
 
-        ls_kwargs = dict(
-            fun=self._residuals,
-            x0=x0_array,
-            method=self.config.method,
-            max_nfev=self.config.max_nfev,
-            x_scale=self.config.x_scale,
-            loss=self.config.loss,
-            f_scale=self.config.f_scale,
-            ftol=self.config.ftol,
-            xtol=self.config.xtol,
-            gtol=self.config.gtol,
-        )
+        ls_kwargs: dict[str, object] = {
+            "fun": self._residuals,
+            "x0": x0_array,
+            "method": self.config.method,
+            "max_nfev": self.config.max_nfev,
+            "x_scale": self.config.x_scale,
+            "loss": self.config.loss,
+            "f_scale": self.config.f_scale,
+            "ftol": self.config.ftol,
+            "xtol": self.config.xtol,
+            "gtol": self.config.gtol,
+        }
         if bounds is not None:
             ls_kwargs["bounds"] = bounds_array
 

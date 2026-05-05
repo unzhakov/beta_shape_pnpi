@@ -137,9 +137,9 @@ def get_git_short_hash(length: int = 7) -> str:
     str
         Short git hash, or "unknown" if not in a git repo.
     """
-    try:
-        import subprocess
+    import subprocess
 
+    try:
         result = subprocess.run(
             ["git", "rev-parse", f"--short={length}", "HEAD"],
             capture_output=True,

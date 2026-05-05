@@ -178,6 +178,11 @@ ______________________________________________________________________
 - [x] Add `--dry-run` option to validate input and display resolved parameters without calculation
 - [x] Add `--version` flag
 - [x] Add `-q/--quiet` flag to suppress terminal output
+- [x] Add `./output/` directory for debug verification artifacts (gitignored except `.gitkeep`)
+- [x] Add debug verification step to development workflow: `bs_pnpi -vv` with parameter consistency checks across all components, documented in DEVELOPMENT.md §4.5
+- [x] Add plot output with ID tracking (commit hash + UTC timestamp) and two display modes:
+  - Normal mode (default): single spectrum plot with nuclear data header
+  - Debug mode (-vv): 4-panel view with all correction factors and deviations
 
 ______________________________________________________________________
 
@@ -205,6 +210,6 @@ ______________________________________________________________________
 **Version:** 0.3.0\
 **Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers. JSON input with full detector param support. Comprehensive test suite (195 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B8 — CLI & output improvements (logging, CSV headers, dry-run, version).
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
 
 **Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).

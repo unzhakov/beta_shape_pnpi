@@ -98,7 +98,9 @@ def main():
                     failed.append(nb.name)
 
     print()
-    print(f"Done. {len(all_plots)} plot(s) extracted, {len(failed)} notebook(s) failed.")
+    print(
+        f"Done. {len(all_plots)} plot(s) extracted, {len(failed)} notebook(s) failed."
+    )
     if all_plots:
         print()
         print("Plots saved to: notebooks/_plots/")
