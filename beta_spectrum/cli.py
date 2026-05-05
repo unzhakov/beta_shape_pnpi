@@ -28,6 +28,7 @@ import sys
 from typing import Any, Dict
 
 from beta_spectrum.logging_utils import LoggingConfig, setup_logging
+from beta_spectrum.spectrum import SpectrumConfig
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -210,6 +211,7 @@ def _run(args: argparse.Namespace) -> None:
     detector_kwargs = _parse_detector_args(args)
 
     source_type: str
+    config: SpectrumConfig
     if args.nuclide:
         logger.info("Source: paceENSDF nuclide=%s", args.nuclide)
         config = create_config_from_source(

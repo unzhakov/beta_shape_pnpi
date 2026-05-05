@@ -169,7 +169,13 @@ class BetaSpectrum:
 
         if config.use_radiative:
             components.append(
-                RadiativeCorrection(W0=W0, use_endpoint_resummation=True, logger=logger)
+                RadiativeCorrection(
+                    W0=W0,
+                    Z=config.Z_daughter,
+                    A=config.A_number,
+                    use_endpoint_resummation=True,
+                    logger=logger,
+                )
             )
 
         return cls(components, logger=logger)

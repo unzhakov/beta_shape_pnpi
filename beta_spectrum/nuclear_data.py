@@ -309,6 +309,7 @@ def _resolve_decay_index(
 
     e = pe.ENSDF()
     pairs = e.ensdf_pairs(edata, mode)
+    assert pairs is not None, "paceENSDF returned None for ensdf_pairs"
 
     matching = [(k, v) for k, v in pairs.items() if str(k[0]) == parent_symbol]
 
@@ -378,13 +379,31 @@ def get_decay_info_from_paceENSDF(
     jpi_data = e.get_parent_jpi(edata, nuclide, decay_idx, mode=mode)
     beta_data = e.get_beta_minus(edata, nuclide, decay_idx, units="best")
 
-    # Extract Q-value and half-life
-    q_value_keV = 0.0
+    # Extract Q-value from ground state branch (state[7] = endpoint energy in keV)
+    # and half-life from halflife_data
+    endpoint_keV = 0.0
     half_life_str = "unknown"
-    for k, v in halflife_data.items():
-        q_value_keV = v[0]
-        half_life_str = str(v[2]) if len(v) > 2 else "unknown"
-        break
+
+    if beta_data:
+        for k, v in beta_data.items():
+            for state in v:
+                if state[0] == 0:  # ground state branch
+                    endpoint_keV = float(state[7])
+                    break
+            if endpoint_keV > 0:
+                break
+
+        # No ground state branch — use first available branch
+        if endpoint_keV == 0.0:
+            for k, v in beta_data.items():
+                if v and len(v) > 0:
+                    endpoint_keV = float(v[0][7])
+                    break
+
+    if halflife_data:
+        for k, v in halflife_data.items():
+            half_life_str = str(v[2]) if len(v) > 2 else "unknown"
+            break
 
     # Extract parent spin/parity
     parent_J = jpi_data[0][0] if jpi_data else 0.0
@@ -398,10 +417,19 @@ def get_decay_info_from_paceENSDF(
     forbidden_code = "0A"  # default
     transition_type = "A"  # default
 
+    if beta_data is None:
+        beta_data = {}
+
     for k, v in beta_data.items():
         for state in v:
-            # state[15] contains forbiddenness code (e.g. '2F', '1UF')
-            if len(state) > 15 and state[15] is not None:
+            # Use ground state branch (level_index == 0) for forbiddenness
+            if state[0] == 0 and len(state) > 15 and state[15] is not None:
+                code = str(state[15])
+                if code in FORBIDDENNESS_MAP:
+                    forbidden_code = code
+                    transition_type = FORBIDDENNESS_MAP[code]
+            # Fallback: use first branch's forbiddenness if no ground state
+            elif transition_type == "A" and len(state) > 15 and state[15] is not None:
                 code = str(state[15])
                 if code in FORBIDDENNESS_MAP:
                     forbidden_code = code
@@ -420,8 +448,8 @@ def get_decay_info_from_paceENSDF(
         Z_parent=Z_parent,
         Z_daughter=Z_daughter,
         A_number=A_number,
-        endpoint_keV=q_value_keV,
-        endpoint_MeV=q_value_keV / 1000.0,
+        endpoint_keV=endpoint_keV,
+        endpoint_MeV=endpoint_keV / 1000.0,
         transition_type=transition_type,
         forbiddenness_code=forbidden_code,
         parent_J=parent_J,
