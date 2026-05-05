@@ -81,6 +81,8 @@ ipython_config.py
 # data/
 outputs/
 results/
+output/*
+!output/.gitkeep
 *.npy
 *.npz
 *.h5
