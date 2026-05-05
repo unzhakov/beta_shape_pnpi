@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -412,13 +413,142 @@ class BetaSpectrumAnalyzer:
 
         return convolved
 
-    def plot_analysis(self, save_path: Optional[str] = None) -> None:
+    def plot_analysis(
+        self,
+        save_path: Optional[str] = None,
+        show_components: bool = True,
+    ) -> None:
         """
-        Create visualization of the spectrum and all correction.
+        Create visualization of the spectrum and all correction factors.
+
+        Parameters
+        ----------
+        save_path : str, optional
+            Path to save the figure.
+        show_components : bool
+            If True, show full debug view (4-panel with all corrections).
+            If False, show only the spectrum plot with nuclear data header.
         """
         total = self.total_spectrum(normalize=True)
         components = self.components
+        commit = get_git_short_hash(6)
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
+        if show_components:
+            self._plot_debug_view(
+                total, components, save_path, commit, timestamp
+            )
+        else:
+            self._plot_spectrum_only(
+                total, save_path, commit, timestamp
+            )
+
+    def _add_id_textbox(
+        self, ax: plt.Axes, commit: str, timestamp: str
+    ) -> None:
+        """Add ID text box with commit hash and timestamp to plot."""
+        id_text = f"commit: {commit}  |  {timestamp}"
+        ax.text(
+            0.01,
+            0.01,
+            id_text,
+            transform=ax.transAxes,
+            fontsize=8,
+            color="gray",
+            verticalalignment="bottom",
+            horizontalalignment="left",
+            fontfamily="monospace",
+        )
+
+    def _add_nuclear_data_header(self, ax: plt.Axes) -> None:
+        """Add nuclear data information header to plot."""
+        parent = self._element_symbol(self.config.Z_parent)
+        daughter = self._element_symbol(self.config.Z_daughter)
+
+        enabled_corrections = []
+        if self.config.use_phase_space:
+            enabled_corrections.append("phase_space")
+        if self.config.use_fermi:
+            enabled_corrections.append("fermi")
+        if self.config.use_screening:
+            enabled_corrections.append("screening")
+        if self.config.use_finite_size:
+            enabled_corrections.append("finite_size")
+        if self.config.use_charge_dist:
+            enabled_corrections.append("charge_dist")
+        if self.config.use_radiative:
+            enabled_corrections.append("radiative")
+        if self.config.use_exchange:
+            enabled_corrections.append("exchange")
+
+        header_lines = [
+            f"Nuclide:    {parent}{self.config.A_number} -> {daughter}{self.config.A_number}",
+            f"Endpoint:   {self.config.endpoint_MeV * 1000:.1f} keV",
+            f"Transition: {self.config.transition_type}",
+            f"Corrections: {', '.join(enabled_corrections)}",
+        ]
+
+        if self.config.use_detector_response:
+            header_lines.append(
+                f"Detector:   {self.config.detector_model} "
+                f"(σ={self.config.detector_sigma_a_keV} keV)"
+            )
+
+        header_text = "\n".join(header_lines)
+        ax.text(
+            0.99,
+            0.99,
+            header_text,
+            transform=ax.transAxes,
+            fontsize=8,
+            verticalalignment="top",
+            horizontalalignment="right",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="none"),
+        )
+
+    def _plot_spectrum_only(
+        self,
+        total: np.ndarray,
+        save_path: Optional[str],
+        commit: str,
+        timestamp: str,
+    ) -> None:
+        """Plot only the total spectrum with nuclear data header."""
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(
+            self.energies_MeV, total, "b-", lw=2, label="Normalized spectrum"
+        )
+        ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=11)
+        ax.set_ylabel("Normalized Counts", fontsize=11)
+        ax.set_title(
+            f"Beta-decay: {self.config.Z_parent} -> {self.config.Z_daughter}, A={self.config.A_number}",
+            fontsize=13,
+        )
+        ax.set_yscale("log")
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best", fontsize=10)
+
+        self._add_nuclear_data_header(ax)
+        self._add_id_textbox(ax, commit, timestamp)
+
+        plt.tight_layout()
+
+        if save_path:
+            fig.savefig(save_path, dpi=150, bbox_inches="tight")
+            print(f"Figure saved to {save_path}")
+
+        plt.show()
+
+    def _plot_debug_view(
+        self,
+        total: np.ndarray,
+        components: Dict[str, np.ndarray],
+        save_path: Optional[str],
+        commit: str,
+        timestamp: str,
+    ) -> None:
+        """Full debug view with 4-panel spectrum analysis."""
         fig = plt.figure(figsize=(14, 10))
 
         # 1. Main spectrum plot (top-left)

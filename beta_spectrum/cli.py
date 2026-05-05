@@ -265,7 +265,10 @@ def _run(args: argparse.Namespace) -> None:
     # Generate plot
     if args.plot:
         analyzer = BetaSpectrumAnalyzer(spectrum, config, logger=logger)
-        analyzer.plot_analysis(save_path=args.plot)
+        analyzer.plot_analysis(
+            save_path=args.plot,
+            show_components=(args.verbose >= 2),
+        )
         logger.info("Analysis plot saved to %s", args.plot)
 
     logger.info("Done.")
