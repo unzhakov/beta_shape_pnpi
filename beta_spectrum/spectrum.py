@@ -94,6 +94,10 @@ class BetaSpectrum:
         """
         result: np.ndarray = np.ones_like(W, dtype=float)
         for comp in self.components:
+            if self._logger:
+                self._logger.debug(
+                    "Evaluating %s at %d energy points", comp.__class__.__name__, len(W)
+                )
             result = result * comp(W)
         return result.astype(np.float64)
 
@@ -131,29 +135,42 @@ class BetaSpectrum:
         W0 = float(T_to_W(config.endpoint_MeV))
 
         if config.use_phase_space:
-            components.append(PhaseSpace(W0=W0, transition_type=config.transition_type))
+            components.append(
+                PhaseSpace(W0=W0, transition_type=config.transition_type, logger=logger)
+            )
 
         if config.use_fermi:
-            components.append(FermiFunction(Z=config.Z_daughter, A=config.A_number))
+            components.append(
+                FermiFunction(Z=config.Z_daughter, A=config.A_number, logger=logger)
+            )
 
         if config.use_finite_size:
-            components.append(FiniteSizeL0(Z=config.Z_daughter, A=config.A_number))
+            components.append(
+                FiniteSizeL0(Z=config.Z_daughter, A=config.A_number, logger=logger)
+            )
 
         if config.use_charge_dist:
             components.append(
-                ChargeDistributionU(Z=config.Z_daughter, A=config.A_number)
+                ChargeDistributionU(
+                    Z=config.Z_daughter, A=config.A_number, logger=logger
+                )
             )
 
         if config.use_screening:
             components.append(
-                ScreeningCorrection(FermiFunction(Z=config.Z_parent, A=config.A_number))
+                ScreeningCorrection(
+                    FermiFunction(Z=config.Z_parent, A=config.A_number, logger=logger),
+                    logger=logger,
+                )
             )
 
         if config.use_exchange:
-            components.append(ExchangeCorrection(Z=config.Z_parent))
+            components.append(ExchangeCorrection(Z=config.Z_parent, logger=logger))
 
         if config.use_radiative:
-            components.append(RadiativeCorrection(W0=W0, use_endpoint_resummation=True))
+            components.append(
+                RadiativeCorrection(W0=W0, use_endpoint_resummation=True, logger=logger)
+            )
 
         return cls(components, logger=logger)
 
@@ -663,11 +680,120 @@ class BetaSpectrumAnalyzer:
         # Build metadata header
         from datetime import datetime, timezone
 
+        def _element_symbol(Z: int) -> str:
+            symbols = [
+                "",
+                "H",
+                "He",
+                "Li",
+                "Be",
+                "B",
+                "C",
+                "N",
+                "O",
+                "F",
+                "Ne",
+                "Na",
+                "Mg",
+                "Al",
+                "Si",
+                "P",
+                "S",
+                "Cl",
+                "Ar",
+                "K",
+                "Ca",
+                "Sc",
+                "Ti",
+                "V",
+                "Cr",
+                "Mn",
+                "Fe",
+                "Co",
+                "Ni",
+                "Cu",
+                "Zn",
+                "Ga",
+                "Ge",
+                "As",
+                "Se",
+                "Br",
+                "Kr",
+                "Rb",
+                "Sr",
+                "Y",
+                "Zr",
+                "Nb",
+                "Mo",
+                "Tc",
+                "Ru",
+                "Rh",
+                "Pd",
+                "Ag",
+                "Cd",
+                "In",
+                "Sn",
+                "Sb",
+                "Te",
+                "I",
+                "Xe",
+                "Cs",
+                "Ba",
+                "La",
+                "Ce",
+                "Pr",
+                "Nd",
+                "Pm",
+                "Sm",
+                "Eu",
+                "Gd",
+                "Tb",
+                "Dy",
+                "Ho",
+                "Er",
+                "Tm",
+                "Yb",
+                "Lu",
+                "Hf",
+                "Ta",
+                "W",
+                "Re",
+                "Os",
+                "Ir",
+                "Pt",
+                "Au",
+                "Hg",
+                "Tl",
+                "Pb",
+                "Bi",
+                "Po",
+                "At",
+                "Rn",
+                "Fr",
+                "Ra",
+                "Ac",
+                "Th",
+                "Pa",
+                "U",
+                "Np",
+                "Pu",
+                "Am",
+                "Cm",
+                "Bk",
+                "Cf",
+                "Es",
+                "Fm",
+            ]
+            return symbols[Z] if Z < len(symbols) else f"Z{Z}"
+
+        parent_symbol = _element_symbol(self.config.Z_parent)
+        daughter_symbol = _element_symbol(self.config.Z_daughter)
+
         header_lines = [
             f"# beta-spectrum v{__import__('beta_spectrum').__version__}",
             f"# timestamp: {datetime.now(timezone.utc).isoformat()}",
             f"# source: {source_type}",
-            f"# nuclide: {self.config.Z_parent}->{self.config.Z_daughter}, A={self.config.A_number}",
+            f"# nuclide: {parent_symbol}{self.config.A_number} -> {daughter_symbol}{self.config.A_number} (Z={self.config.Z_parent}->{self.config.Z_daughter})",
             f"# endpoint: {self.config.endpoint_MeV * 1000:.1f} keV",
             f"# transition: {self.config.transition_type}",
             f"# corrections: {', '.join(enabled)}",

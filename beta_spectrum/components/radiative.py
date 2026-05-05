@@ -1,4 +1,6 @@
 # components/radiative.py
+import logging
+
 import numpy as np
 from scipy.special import spence
 
@@ -41,6 +43,7 @@ class RadiativeCorrection(SpectrumComponent):
         A: int | None = None,
         use_endpoint_resummation: bool = True,
         delta_cut: float = 1e-3,
+        logger: logging.Logger | None = None,
     ):
         """
         Args:
@@ -49,7 +52,9 @@ class RadiativeCorrection(SpectrumComponent):
             A: Mass number (optional, affects nuclear model correction)
             use_endpoint_resummation: Apply Eq.(53) to handle ln(W0 - W) divergence
             delta_cut: Only apply resummation when (W0 - W) < delta_cut (spec Section 3.4)
+            logger: Optional logger for debug/info output
         """
+        super().__init__(logger=logger)
         self.W0 = W0
         self.Z = Z
         self.A = A
@@ -65,6 +70,16 @@ class RadiativeCorrection(SpectrumComponent):
         # Precompute O(Z*alpha^2) energy-independent nuclear part if A is given
         self._delta_F = self._compute_nuclear_model_correction(Z, A)
 
+        if self._logger:
+            self._logger.debug(
+                "RadiativeCorrection: W0=%.4f, Z=%d, A=%s, delta_cut=%.2e, resummation=%s",
+                W0,
+                Z,
+                A,
+                delta_cut,
+                use_endpoint_resummation,
+            )
+
     def __call__(self, W: np.ndarray) -> np.ndarray:
         """
         Calculate R(W, W0) = 1 + delta_1(W, W0) + delta_2(Z, W).
@@ -75,6 +90,15 @@ class RadiativeCorrection(SpectrumComponent):
         Returns:
             Radiative correction factor array
         """
+        if self._logger:
+            self._logger.debug(
+                "RadiativeCorrection: evaluating at %d points, W range=[%.4f, %.4f], W0=%.4f",
+                len(W),
+                W.min(),
+                W.max(),
+                self.W0,
+            )
+
         W = np.asarray(W, dtype=float)
 
         # Avoid numerical issues exactly at endpoint W0
@@ -95,7 +119,16 @@ class RadiativeCorrection(SpectrumComponent):
             delta_R_finite = delta_1 + delta_2
             delta_R[mask_finite] = delta_R_finite
 
-        return np.asarray(1.0 + delta_R, dtype=np.float64)
+        result = np.asarray(1.0 + delta_R, dtype=np.float64)
+
+        if self._logger:
+            self._logger.debug(
+                "RadiativeCorrection: output range=[%.6e, %.6e]",
+                result.min(),
+                result.max(),
+            )
+
+        return result
 
     def _delta_1(self, W: np.ndarray) -> np.ndarray:
         """

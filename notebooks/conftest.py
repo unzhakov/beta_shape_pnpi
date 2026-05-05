@@ -1,5 +1,6 @@
 # conftest.py — shared fixtures for notebooks
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive backend for CI
 
 import matplotlib.pyplot as plt

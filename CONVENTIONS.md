@@ -66,7 +66,35 @@ from beta_spectrum.constants import ME_MEV, ME_KEV, ALPHA, MP_MEV
 - Never use manual arithmetic for unit conversion — use `T_to_W()`, `W_to_T()`
 - Never mix MeV and m_e units in the same calculation
 
-## 3. SpectrumComponent Design
+## 3. Energy Unit Convention
+
+### MeV Throughout
+
+All energy parameters in the public API use **MeV** as the standard unit:
+
+- `endpoint_MeV` — always in MeV
+- `e_step_MeV` — always in MeV
+- `detector_sigma_a_keV` — in keV (detector-specific, exception noted)
+- `detector_tau_keV` — in keV (detector-specific, exception noted)
+
+Detector parameters use keV because detector resolutions are typically specified in keV in the literature. All other energies use MeV.
+
+### CLI Unit Convention
+
+All CLI energy parameters use MeV unless explicitly marked otherwise:
+
+- `--e-step` — MeV (default: 0.001)
+- `--sigma` — keV (detector resolution, default: 1.0)
+- `--tau` — keV (tail decay constant, default: 5.0)
+
+### Consistency Rule
+
+When reading or writing values, always check the unit suffix in the parameter name:
+- `_MeV` suffix → value is in MeV
+- `_keV` suffix → value is in keV
+- No suffix on energy parameter → value is in m_e units (internal)
+
+## 4. SpectrumComponent Design
 
 All spectral components (Fermi function, screening, radiative correction, etc.) follow a common interface:
 
@@ -87,7 +115,42 @@ class MyComponent(SpectrumComponent):
         return ...
 ```
 
-## 4. Physics-Specific Testing Guidelines
+## 5. Logging Convention
+
+### Verbosity Levels
+
+- **No verbosity (default)**: Only errors and warnings
+- **`-v` (INFO)**: Shows source selection, component initialization, workflow steps, and output locations
+- **`-vv` (DEBUG)**: Shows all INFO messages plus detailed internals of each spectrum component (parameters, input/output ranges, evaluation counts)
+
+### Component Logging
+
+Each `SpectrumComponent` logs at two levels:
+
+- **INFO** at initialization: Component name and key parameters
+- **DEBUG** at evaluation: Number of energy points, input/output value ranges
+
+This allows debugging without cluttering normal output.
+
+## 6. Nuclear Data Notation
+
+### Element and Nuclide Notation
+
+- Element symbol: `Tc`, `Ru`, `U`, etc. (from atomic number)
+- Nuclide notation: `Tc99`, `Ru99`, `U238` (element symbol + mass number)
+- Decay notation: `Tc99 -> Ru99` (parent -> daughter)
+
+### CSV Header Convention
+
+CSV metadata headers use element notation for readability:
+
+```
+# nuclide: Tc99 -> Ru99 (Z=43->44)
+```
+
+This provides both the human-readable notation and the machine-parseable Z values.
+
+## 7. Physics-Specific Testing Guidelines
 
 When writing tests for physics components, verify the following:
 

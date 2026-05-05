@@ -1,5 +1,7 @@
 from typing import Any
 
+import logging
+
 import numpy as np
 
 from beta_spectrum.base import SpectrumComponent
@@ -26,6 +28,7 @@ class ScreeningCorrection(SpectrumComponent):
         Delta: float = 0.01,
         eps: float = 1e-6,
         C: float = 0.015,
+        logger: logging.Logger | None = None,
     ):
         """
         Parameters
@@ -39,6 +42,7 @@ class ScreeningCorrection(SpectrumComponent):
         Delta : switching width
         eps : numerical floor for W_tilde
         """
+        super().__init__(logger=logger)
         self.fermi = fermi_function
         self.Z = fermi_function.Z
         self.Ws = Ws
@@ -47,10 +51,27 @@ class ScreeningCorrection(SpectrumComponent):
         self._C = C
         self.V0 = V0 if V0 is not None else self._estimate_V0()
 
+        if self._logger:
+            self._logger.debug(
+                "ScreeningCorrection: Z=%d, V0=%.6f, Ws=%.4f, Delta=%.4f",
+                self.Z,
+                self.V0,
+                self.Ws,
+                self.Delta,
+            )
+
     # --------------------
     # Core evaluation
     # --------------------
     def __call__(self, W: np.ndarray) -> np.ndarray:
+        if self._logger:
+            self._logger.debug(
+                "ScreeningCorrection: evaluating at %d points, W range=[%.4f, %.4f]",
+                len(W),
+                W.min(),
+                W.max(),
+            )
+
         W = np.asarray(W)
 
         # Energy shift by screening potential V0
@@ -70,7 +91,16 @@ class ScreeningCorrection(SpectrumComponent):
         # Smooth switching
         f = self._switching_function(W)
 
-        return np.asarray(1.0 + f * (S_raw - 1.0), dtype=np.float64)
+        result = np.asarray(1.0 + f * (S_raw - 1.0), dtype=np.float64)
+
+        if self._logger:
+            self._logger.debug(
+                "ScreeningCorrection: output range=[%.6e, %.6e]",
+                result.min(),
+                result.max(),
+            )
+
+        return result
 
     # --------------------
     # Helpers

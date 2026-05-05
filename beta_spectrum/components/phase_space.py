@@ -15,6 +15,7 @@ class PhaseSpace(SpectrumComponent):
         transition_type: str = "A",
         m_e: float = 1.0,
         m_nu: float = 0.0,
+        logger=None,
     ):
         """
         Create instance of phase space with given decay parameters.
@@ -25,7 +26,9 @@ class PhaseSpace(SpectrumComponent):
             transition_type: allowed or N-order forbidden, should be [A, F1, F1U, F2, F2U, F3, F3U, F4]
             m_e: 1st body mass (electron by default: m_e = 1)
             m_nu:2nd body mass (massless neutrino by default: m_nu = 0)
+            logger: Optional logger for debug/info output
         """
+        super().__init__(logger=logger)
         self.tr_type = transition_type
         if self.tr_type not in ["A", "F1", "F1U", "F2", "F2U", "F3", "F3U", "F4"]:
             raise ValueError(

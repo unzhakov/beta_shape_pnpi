@@ -217,7 +217,8 @@ class TestCSVMetadataHeader:
         with open(filename, "r") as f:
             content = f.read()
 
-        assert "# nuclide: 43->44, A=99" in content
+        assert "# nuclide: Tc99 -> Ru99" in content
+        assert "Z=43->44" in content
         os.unlink(filename)
 
     def test_header_contains_git_commit(self):
@@ -316,9 +317,9 @@ class TestCLILogging:
 
         parser = _build_parser()
         args = parser.parse_args(
-            ["--nuclide", "Tc99", "--dry-run", "--log-file", "test.log"]
+            ["--nuclide", "Tc99", "--dry-run", "--log-file", "/tmp/test.log"]
         )
-        assert args.log_file == "test.log"
+        assert args.log_file == "/tmp/test.log"
 
     def test_dry_run_flag(self, capsys):
         """Test that --dry-run is recognized."""
@@ -336,3 +337,27 @@ class TestCLILogging:
         with pytest.raises(SystemExit) as exc_info:
             parser.parse_args(["--version"])
         assert exc_info.value.code == 0
+
+    def test_removed_mode_flag(self):
+        """Test that --mode option has been removed."""
+        from beta_spectrum.cli import _build_parser
+
+        parser = _build_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["--nuclide", "Tc99", "--mode", "beta_minus"])
+
+    def test_removed_transition_type_flag(self):
+        """Test that --transition-type option has been removed."""
+        from beta_spectrum.cli import _build_parser
+
+        parser = _build_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["--nuclide", "Tc99", "--transition-type", "A"])
+
+    def test_removed_decay_index_flag(self):
+        """Test that --decay-index option has been removed."""
+        from beta_spectrum.cli import _build_parser
+
+        parser = _build_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["--nuclide", "Tc99", "--decay-index", "0"])

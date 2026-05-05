@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
+
+import logging
 
 import numpy as np
 
@@ -11,7 +13,14 @@ class ExchangeCorrection(SpectrumComponent):
     Atomic xchange correction using Hayen 2018 Table X coefficients (App. G)
     """
 
-    def __init__(self, Z: int, filename: str | None = None, eps: float = 1e-6):
+    def __init__(
+        self,
+        Z: int,
+        filename: Optional[str] = None,
+        eps: float = 1e-6,
+        logger: Optional[logging.Logger] = None,
+    ):
+        super().__init__(logger=logger)
         self.Z = Z
         self.eps = eps
 
@@ -19,6 +28,13 @@ class ExchangeCorrection(SpectrumComponent):
             filename = str(self._default_coeff_path())
 
         self.coeffs = self._load_coeffs(filename)
+
+        if self._logger:
+            self._logger.debug(
+                "ExchangeCorrection: Z=%d, coefficients loaded from %s",
+                Z,
+                filename,
+            )
 
     def _load_coeffs(self, filename: str) -> Dict[str, float]:
         data = np.genfromtxt(filename, delimiter=",", names=True)
@@ -42,6 +58,14 @@ class ExchangeCorrection(SpectrumComponent):
         return Path(__file__).resolve().parent.parent / "data" / "exchange_coeff.csv"
 
     def __call__(self, W: np.ndarray) -> np.ndarray:
+        if self._logger:
+            self._logger.debug(
+                "ExchangeCorrection: evaluating at %d points, W range=[%.4f, %.4f]",
+                len(W),
+                W.min(),
+                W.max(),
+            )
+
         W = np.asarray(W)
 
         # Define physical cutoff
@@ -71,4 +95,13 @@ class ExchangeCorrection(SpectrumComponent):
 
         X_safe = 1.0 + term1 + term2 + term3 + term4
 
-        return np.asarray(X_safe, dtype=np.float64)
+        result = np.asarray(X_safe, dtype=np.float64)
+
+        if self._logger:
+            self._logger.debug(
+                "ExchangeCorrection: output range=[%.6e, %.6e]",
+                result.min(),
+                result.max(),
+            )
+
+        return result
