@@ -101,10 +101,21 @@ ______________________________________________________________________
 
 ### B3. Multiple Branch Decays
 
-- [ ] Add support for multiple branch decays
-  - Calculate total spectral shape weighted by branch intensities
-  - Handle decays with significant branching to excited states
-  - Sum contributions from all branches with proper weighting
+- [x] ~~Add support for multiple branch decays~~
+  - ~~Calculate total spectral shape weighted by branch intensities~~
+  - ~~Handle decays with significant branching to excited states~~
+  - ~~Sum contributions from all branches with proper weighting~~
+  - ~~Implemented: `BranchConfig` dataclass, multi-branch `BetaSpectrum` with per-branch calculators~~
+  - ~~Branch data from paceENSDF: intensity, endpoint (Q-value - excitation energy), transition type~~
+  - ~~Intensity normalization to 100% across all branches~~
+  - ~~CSV export: total spectrum, per-branch spectra, per-branch components (PhaseSpace, Radiative), universal components (Fermi, Screening, etc.)~~
+  - ~~Plot: total spectrum + individual branches with legend (transition type, endpoint energy)~~
+  - ~~Debug plot: vertical layout with per-branch panels, universal components panel~~
+  - ~~Energy grid extends to max branch endpoint, per-branch spectra masked beyond their endpoint~~
+  - ~~Single-branch = trivial case of multi-branch (no separate mode)~~
+  - ~~Per-branch transition types extracted from ENSDF (not defaulting to 'A')~~
+  - ~~`--intensity-cutoff` CLI option to filter out negligible branches~~
+  - ~~Branch spectra plotted as raw (un-normalized) contributions so total = sum of branches~~
 
 ### B4. Beta+ Decay Support
 
@@ -207,9 +218,9 @@ ______________________________________________________________________
 
 ## Current Status
 
-**Version:** 0.3.0\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers. JSON input with full detector param support. Comprehensive test suite (195 tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Version:** 0.3.1\
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. Multi-branch decay support with per-branch calculators and intensity-weighted sum. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers with branch info. JSON input with full detector param support. Comprehensive test suite (226 tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B3 — multi-branch decay support (BranchConfig, per-branch calculators, intensity weighting, branch-aware CSV export and plotting, per-branch transition types from ENSDF, `--intensity-cutoff` CLI option, raw-value plotting where total = sum of branches). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
 
 **Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).
