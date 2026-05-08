@@ -444,7 +444,7 @@ def get_decay_info_from_paceENSDF(
             branch = BranchInfo(
                 level_index=int(state[0]),
                 level_energy_keV=float(state[1]),
-                intensity=float(state[8]),
+                intensity=float(state[9]) / 100.0,
                 log_ft=float(state[11]) if state[11] is not None else None,
                 transition_type=branch_transition_type,
             )
