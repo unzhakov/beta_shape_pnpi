@@ -258,9 +258,17 @@ class TestPaceENSDFIntegration:
             assert isinstance(branch, BranchInfo)
             assert branch.level_index >= 0
             assert branch.level_energy_keV >= 0
-            assert 0 < branch.intensity <= 100
+            assert 0 < branch.intensity <= 1.0
             if branch.log_ft is not None:
                 assert branch.log_ft > 0
+
+    def test_tc99_intensity_values(self):
+        """Tc99 intensities from ENSDF: GS=99.9984%, 89.5keV=0.0016%."""
+        info = get_decay_info_from_paceENSDF("Tc99", "beta_minus")
+        gs = next(b for b in info.branches if b.level_energy_keV == 0.0)
+        ex = next(b for b in info.branches if b.level_energy_keV == 89.5)
+        assert abs(gs.intensity - 0.999984) < 1e-6
+        assert abs(ex.intensity - 0.000016) < 1e-6
 
     def test_invalid_nuclide(self):
         with pytest.raises(ValueError, match="Unknown element symbol"):
