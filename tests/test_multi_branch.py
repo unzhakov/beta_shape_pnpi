@@ -466,9 +466,17 @@ class TestMultiBranchCSVExport:
         # Should have total spectrum column
         assert "spectrum" in df.columns
 
-        # Should have per-branch columns
+        # Should have per-branch spectrum columns (intensity/endpoint/transition are in the header)
         assert "branch_1_spectrum" in df.columns
         assert "branch_2_spectrum" in df.columns
+
+        # Should NOT have repeated per-branch metadata columns
+        assert "branch_1_intensity" not in df.columns
+        assert "branch_1_endpoint" not in df.columns
+        assert "branch_1_transition" not in df.columns
+        assert "branch_2_intensity" not in df.columns
+        assert "branch_2_endpoint" not in df.columns
+        assert "branch_2_transition" not in df.columns
 
         # Should have universal columns
         assert "universal_Fermi" in df.columns

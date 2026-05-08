@@ -1572,19 +1572,9 @@ class BetaSpectrumAnalyzer:
 
         if self._is_multi and self.spectrum.branches:
             # Multi-branch mode: total spectrum + per-branch spectra + components
-            for i, (branch, branch_spec) in enumerate(
-                zip(self.spectrum.branches, self.spectrum.branch_spectra)
-            ):
+            # (branch info — intensity, endpoint, transition — is in the header, not repeated columns)
+            for i, branch_spec in enumerate(self.spectrum.branch_spectra):
                 data[f"branch_{i+1}_spectrum"] = branch_spec(self.W)
-                data[f"branch_{i+1}_intensity"] = np.full_like(
-                    self.energies_MeV, branch.intensity
-                )
-                data[f"branch_{i+1}_endpoint"] = np.full_like(
-                    self.energies_MeV, branch.endpoint_MeV
-                )
-                data[f"branch_{i+1}_transition"] = np.full_like(
-                    self.energies_MeV, branch.transition_type, dtype=object
-                )
 
             # Per-branch components (PhaseSpace, Radiative, etc.)
             for i, branch_spec in enumerate(self.spectrum.branch_spectra):
