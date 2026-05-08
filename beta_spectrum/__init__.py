@@ -11,7 +11,7 @@ from .components.exchange import ExchangeCorrection
 from .components.radiative import RadiativeCorrection
 from .components.detector_response import DetectorResponse
 
-from .spectrum import BetaSpectrum, SpectrumConfig, BetaSpectrumAnalyzer
+from .spectrum import BetaSpectrum, SpectrumConfig, BetaSpectrumAnalyzer, BranchConfig
 from .fitter import CurveFitter, FitConfig, FitResult
 from .cw_extractor import CWExtractor, CWExtractionResult, GVAExtractionResult
 from .nuclear_data import (
@@ -44,6 +44,7 @@ __all__ = [
     "BetaSpectrum",
     "SpectrumConfig",
     "BetaSpectrumAnalyzer",
+    "BranchConfig",
     "CurveFitter",
     "FitConfig",
     "FitResult",

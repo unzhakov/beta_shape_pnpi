@@ -149,5 +149,6 @@ For a complete list of implemented and planned features, see [TODO.md](TODO.md).
 
 - **Physics corrections**: phase space, Fermi function, finite size, screening, exchange, radiative (with delta_cut resummation)
 - **Detector response**: Gaussian, Gaussian+tail, Tikhonov models with tabulated support
+- **Multi-branch decay**: intensity-weighted sum of branch spectra, per-branch calculators with branch-specific endpoint, transition type (from ENSDF), and `--intensity-cutoff` CLI filter
 - **Analysis tools**: χ² fitter, C(W) extraction pipeline, Kurie plot analysis
-- **CLI**: `bs_pnpi` with paceENSDF integration, structured logging, CSV metadata headers
+- **CLI**: `bs_pnpi` with paceENSDF integration, structured logging, CSV metadata headers, branch info in dry-run and CSV output
