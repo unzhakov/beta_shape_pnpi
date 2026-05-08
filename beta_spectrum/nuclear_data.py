@@ -94,12 +94,15 @@ class BranchInfo:
         Branch intensity (fraction of decays).
     log_ft : float
         log(ft) value for this branch.
+    transition_type : str
+        Forbiddenness classification for this branch (A, F1, F1U, F2, ...).
     """
 
     level_index: int
     level_energy_keV: float
     intensity: float
     log_ft: Optional[float]
+    transition_type: str = "A"
 
 
 def _parse_nuclide_symbol(symbol: str) -> Tuple[str, int, int]:
@@ -422,24 +425,28 @@ def get_decay_info_from_paceENSDF(
 
     for k, v in beta_data.items():
         for state in v:
-            # Use ground state branch (level_index == 0) for forbiddenness
-            if state[0] == 0 and len(state) > 15 and state[15] is not None:
+            # Extract per-branch forbiddenness code
+            branch_transition_type = "A"  # default
+            if len(state) > 15 and state[15] is not None:
                 code = str(state[15])
                 if code in FORBIDDENNESS_MAP:
-                    forbidden_code = code
-                    transition_type = FORBIDDENNESS_MAP[code]
-            # Fallback: use first branch's forbiddenness if no ground state
-            elif transition_type == "A" and len(state) > 15 and state[15] is not None:
-                code = str(state[15])
-                if code in FORBIDDENNESS_MAP:
-                    forbidden_code = code
-                    transition_type = FORBIDDENNESS_MAP[code]
+                    branch_transition_type = FORBIDDENNESS_MAP[code]
+
+            # Use ground state branch (level_index == 0) for overall forbiddenness
+            if state[0] == 0:
+                forbidden_code = (
+                    str(state[15])
+                    if len(state) > 15 and state[15] is not None
+                    else "0A"
+                )
+                transition_type = branch_transition_type
 
             branch = BranchInfo(
                 level_index=int(state[0]),
                 level_energy_keV=float(state[1]),
                 intensity=float(state[8]),
                 log_ft=float(state[11]) if state[11] is not None else None,
+                transition_type=branch_transition_type,
             )
             branches.append(branch)
 
