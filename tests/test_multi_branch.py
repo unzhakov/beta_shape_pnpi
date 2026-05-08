@@ -479,7 +479,7 @@ class TestMultiBranchCSVExport:
         assert "branch_2_transition" not in df.columns
 
         # Should have universal columns
-        assert "universal_Fermi" in df.columns
+        assert "Fermi" in df.columns
 
     def test_single_branch_csv_columns(self, tmp_path):
         """Single-branch CSV should have standard columns."""

@@ -1582,10 +1582,10 @@ class BetaSpectrumAnalyzer:
                 for comp_name, values in branch_comps.items():
                     data[f"branch_{i+1}_{comp_name}"] = values
 
-            # Universal components only (skip per-branch keys)
+            # Universal components (same for all branches — no prefix needed)
             for name, values in components.items():
                 if not name.startswith("branch_"):
-                    data[f"universal_{name}"] = values
+                    data[name] = values
         else:
             # Single-branch mode: standard export
             for name, values in components.items():
