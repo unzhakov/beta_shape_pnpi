@@ -156,6 +156,15 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Validate input and display resolved configuration without computing spectrum.",
     )
+    log_group.add_argument(
+        "--intensity-cutoff",
+        type=float,
+        default=0.0,
+        metavar="FRAC",
+        help="Minimum branch intensity fraction to include in the spectrum "
+        "(default: 0.0 = include all branches). "
+        "Branches below this threshold are excluded from the calculation and plots.",
+    )
 
     return parser
 
@@ -181,10 +190,16 @@ def _run(args: argparse.Namespace) -> None:
     from beta_spectrum.logging_utils import get_logger
     from beta_spectrum.nuclear_data import (
         create_config_from_source,
+        get_decay_info_from_paceENSDF,
         json_to_config,
         load_json_input,
     )
-    from beta_spectrum.spectrum import BetaSpectrum, BetaSpectrumAnalyzer
+    from beta_spectrum.spectrum import (
+        BetaSpectrum,
+        BetaSpectrumAnalyzer,
+        BranchConfig,
+        SpectrumConfig,
+    )
 
     # Determine logging level
     if args.quiet:
@@ -214,16 +229,78 @@ def _run(args: argparse.Namespace) -> None:
     config: SpectrumConfig
     if args.nuclide:
         logger.info("Source: paceENSDF nuclide=%s", args.nuclide)
-        config = create_config_from_source(
-            "paceENSDF",
-            nuclide=args.nuclide,
-            e_step_MeV=args.e_step,
-            use_detector_response=detector_kwargs.get("use_detector_response", False),
-            detector_model=detector_kwargs.get("detector_model", "gaussian"),
-            detector_sigma_a_keV=detector_kwargs.get("detector_sigma_a_keV", 1.0),
-            detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
-            detector_tail_fraction=detector_kwargs.get("detector_tail_fraction", 0.0),
-        )
+        decay_info = get_decay_info_from_paceENSDF(args.nuclide, "beta_minus")
+
+        # Normalize branch intensities to sum to 1.0
+        if decay_info.branches:
+            total_intensity = sum(b.intensity for b in decay_info.branches)
+            if total_intensity > 0:
+                branches = [
+                    BranchConfig(
+                        endpoint_MeV=(
+                            (decay_info.endpoint_MeV - b.level_energy_keV / 1000.0)
+                            if b.level_energy_keV > 0
+                            else decay_info.endpoint_MeV
+                        ),
+                        transition_type=b.transition_type,
+                        intensity=b.intensity / total_intensity,
+                    )
+                    for b in decay_info.branches
+                    if b.intensity / total_intensity >= args.intensity_cutoff
+                ]
+                config = SpectrumConfig(
+                    Z_parent=decay_info.Z_parent,
+                    Z_daughter=decay_info.Z_daughter,
+                    A_number=decay_info.A_number,
+                    endpoint_MeV=decay_info.endpoint_MeV,
+                    transition_type=decay_info.transition_type,
+                    e_step_MeV=args.e_step,
+                    branches=branches,
+                    intensity_cutoff=args.intensity_cutoff,
+                    use_detector_response=detector_kwargs.get(
+                        "use_detector_response", False
+                    ),
+                    detector_model=detector_kwargs.get("detector_model", "gaussian"),
+                    detector_sigma_a_keV=detector_kwargs.get(
+                        "detector_sigma_a_keV", 1.0
+                    ),
+                    detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
+                    detector_tail_fraction=detector_kwargs.get(
+                        "detector_tail_fraction", 0.0
+                    ),
+                )
+            else:
+                config = create_config_from_source(
+                    "paceENSDF",
+                    nuclide=args.nuclide,
+                    e_step_MeV=args.e_step,
+                    use_detector_response=detector_kwargs.get(
+                        "use_detector_response", False
+                    ),
+                    detector_model=detector_kwargs.get("detector_model", "gaussian"),
+                    detector_sigma_a_keV=detector_kwargs.get(
+                        "detector_sigma_a_keV", 1.0
+                    ),
+                    detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
+                    detector_tail_fraction=detector_kwargs.get(
+                        "detector_tail_fraction", 0.0
+                    ),
+                )
+        else:
+            config = create_config_from_source(
+                "paceENSDF",
+                nuclide=args.nuclide,
+                e_step_MeV=args.e_step,
+                use_detector_response=detector_kwargs.get(
+                    "use_detector_response", False
+                ),
+                detector_model=detector_kwargs.get("detector_model", "gaussian"),
+                detector_sigma_a_keV=detector_kwargs.get("detector_sigma_a_keV", 1.0),
+                detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
+                detector_tail_fraction=detector_kwargs.get(
+                    "detector_tail_fraction", 0.0
+                ),
+            )
         source_type = "paceENSDF"
     elif args.input:
         logger.info("Source: JSON file=%s", args.input)
@@ -241,10 +318,14 @@ def _run(args: argparse.Namespace) -> None:
 
     # Create and calculate spectrum
     start_time = time.time()
+    mode_str = ""
+    if config.branches and len(config.branches) > 1:
+        mode_str = f" (multi-branch: {len(config.branches)} branches)"
     logger.info(
-        "Creating BetaSpectrum for %s, endpoint=%.3f MeV",
+        "Creating BetaSpectrum for %s, endpoint=%.3f MeV%s",
         _decay_notation(config.Z_parent, config.Z_daughter, config.A_number),
         config.endpoint_MeV,
+        mode_str,
     )
 
     spectrum = BetaSpectrum.from_config(config, logger=logger)
@@ -305,6 +386,22 @@ def _print_dry_run_output(config, source_type: str) -> None:
     print(f"Transition: {config.transition_type}")
     print(f"e_step:     {config.e_step_MeV:.4f} MeV")
     print(f"Corrections: {', '.join(enabled) if enabled else 'none'}")
+
+    if config.branches and len(config.branches) > 1:
+        print(f"\nMulti-branch mode: {len(config.branches)} branches")
+        if config.intensity_cutoff > 0:
+            print(
+                f"Intensity cutoff: {config.intensity_cutoff:.4f} ({config.intensity_cutoff*100:.1f}%)"
+            )
+        for i, branch in enumerate(config.branches):
+            print(
+                f"  Branch {i+1}: E₀={branch.endpoint_MeV*1000:.1f} keV, "
+                f"transition={branch.transition_type}, "
+                f"intensity={branch.intensity:.4f}"
+            )
+    else:
+        print("Mode: single-branch")
+
     if config.use_detector_response:
         print(
             f"Detector:   {config.detector_model} (sigma={config.detector_sigma_a_keV} keV, "
