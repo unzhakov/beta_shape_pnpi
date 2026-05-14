@@ -6,14 +6,14 @@ tags:
 status: active
 aliases: [Shape Factor, C(Z,W), Form Factors]
 cssclasses: []
-related_components: [[07-recoil-effects]], [[11-isospin-breakdown]]
+related_components: [[corrections/06-recoil]], 
 ---
 
 # Nuclear Structure Effects — The Shape Factor $C(Z,W)$
 
 ## Overview
 
-Nuclear structure effects are encapsulated in the shape factor $C(Z,W)$ which multiplies the phase space × Fermi function. This is distinct from electrostatic finite size corrections ([[03-finite-size]]) — it describes how nuclear form factors and matrix elements modify the spectrum beyond simple point-nucleus Coulomb interaction.
+Nuclear structure effects are encapsulated in the shape factor $C(Z,W)$ which multiplies the phase space × Fermi function. This is distinct from electrostatic finite size corrections ([[corrections/02-finite-size]]) — it describes how nuclear form factors and matrix elements modify the spectrum beyond simple point-nucleus Coulomb interaction.
 
 $$N(W)\,dW \propto p W (W_0 - W)^2 F(Z,W) C(Z,W) \tag{79}$$
 
@@ -53,7 +53,7 @@ The one-body density matrix elements $\langle f | a^\dagger_\alpha a_\beta | i \
 
 ## Induced Currents — Form Factor Classification
 
-See [[07-recoil-effects]] for detailed equations. Key points:
+See [[corrections/06-recoil]] for detailed equations. Key points:
 
 ### First-Class Currents (CVC/PCAC)
 - **Vector** $g_V$: conserved, from EM data via CVC
@@ -82,7 +82,7 @@ See [[07-recoil-effects]] for detailed equations. Key points:
 
 ## Nuclear Deformation Correction $D_C(Z,W,\beta^2)$
 
-The nuclear structure analogue of the electrostatic deformation correction ([[03-finite-size]]):
+The nuclear structure analogue of the electrostatic deformation correction ([[corrections/02-finite-size]]):
 - Accounts for non-spherical nuclear shape in convolution terms
 - Partially cancels with $DFS$ correction (electrostatic)
 - Relevant for deformed nuclei ($\beta_2 \neq 0$)

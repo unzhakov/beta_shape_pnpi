@@ -6,7 +6,7 @@ tags:
 status: active
 aliases: [Coulomb Correction, F_0]
 cssclasses: []
-related_components: [[03-finite-size]], [[06-radiative-corrections]]
+related_components: [[corrections/02-finite-size]], [[corrections/05-radiative]]
 ---
 
 # Fermi Function — Coulomb Interaction $F_0(Z,W)$
@@ -24,7 +24,7 @@ $$F_0(Z,W) = 4(2pR)^{2(\gamma-1)} e^{\pi y} \frac{|\Gamma(\gamma + iy)|^2}{(\Gam
 with:
 $$\gamma = \sqrt{1 - (\alpha Z)^2}, \quad y = \pm \alpha Z W / p$$
 
-Here $R$ is the cutoff radius representing daughter nucleus radius — necessitated by divergence at origin for point charge. Most of its dependence is absorbed into corrections ([[03-finite-size]]).
+Here $R$ is the cutoff radius representing daughter nucleus radius — necessitated by divergence at origin for point charge. Most of its dependence is absorbed into corrections ([[corrections/02-finite-size]]).
 
 ## Coulomb Amplitudes
 
@@ -70,5 +70,5 @@ The effect ranges from ~1% for light nuclei to tens of percent for heavy ones.
 ## Related Corrections
 
 After the point charge Fermi function is computed:
-- [[03-finite-size]] corrects for non-pointlike nuclear charge ($L_0$, $U$, $DFS$)
-- [[06-radiative-corrections]] adds QED radiative effects ($R = 1 + \delta_R$)
+- [[corrections/02-finite-size]] corrects for non-pointlike nuclear charge ($L_0$, $U$, $DFS$)
+- [[corrections/05-radiative]] adds QED radiative effects ($R = 1 + \delta_R$)

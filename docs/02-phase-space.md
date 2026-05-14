@@ -6,7 +6,7 @@ tags:
 status: active
 aliases: [Phase Space, Baseline Spectrum]
 cssclasses: []
-related_components: [[01-fermi-function]], [[07-recoil-effects]]
+related_components: [[corrections/01-fermi-function]], [[corrections/06-recoil]]
 ---
 
 # Phase Space — Baseline Spectral Shape $p W (W_0 - W)^2$
@@ -41,7 +41,7 @@ $$K(W) = \sqrt{\frac{N(W)}{p W F(Z,W)}} \approx W_0 - W \quad (\text{linear for 
 
 Deviations from linearity near the endpoint indicate:
 - Non-zero neutrino mass
-- Weak magnetism / recoil effects ([[07-recoil-effects]])
+- Weak magnetism / recoil effects ([[corrections/06-recoil]])
 - New physics (Fierz term [[Hayen2017_summary#The Fierz Interference Term]])
 
 ## Calculator Implementation
@@ -62,7 +62,7 @@ The `PhaseSpace` calculator accepts a `transition_type` parameter that determine
 | `F2U`, `F3` | 2, 3 | $p_\nu^4 + \frac{3}{10}p_\nu^2 p_e^2 + p_e^4$ |
 | `F3U`, `F4` | 3, 4 | $p_\nu^6 + 7p_\nu^4 p_e^2 + 7p_\nu^2 p_e^4 + p_e^6$ |
 
-The forbidden factor modifies the energy dependence of the spectrum, becoming significant at higher electron energies. See `[[10-nuclear-structure]]` for the full shape factor treatment.
+The forbidden factor modifies the energy dependence of the spectrum, becoming significant at higher electron energies. See `[[nuclear-structure/01-shape-factors]]` for the full shape factor treatment.
 
 ## Energy Range
 

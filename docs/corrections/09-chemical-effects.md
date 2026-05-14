@@ -6,7 +6,7 @@ tags:
 status: active
 aliases: [Molecular Screening, Molecular Exchange, Saenz-Froelich]
 cssclasses: []
-related_components: [[12-atomic-overlap]], [[04-screening-correction]]
+related_components: [[corrections/08-atomic-overlap]], [[corrections/03-screening]]
 ---
 
 # Chemical / Molecular Effects on β Spectrum
@@ -113,5 +113,5 @@ For molecular experiments requiring these corrections:
 
 ## Related Notes
 
-- [[12-atomic-overlap]] — Atomic mismatch / Bahcall correction
-- [[04-screening-correction]] — Baseline atomic screening $S(Z,W)$
+- [[corrections/08-atomic-overlap]] — Atomic mismatch / Bahcall correction
+- [[corrections/03-screening]] — Baseline atomic screening $S(Z,W)$

@@ -6,7 +6,7 @@ tags:
 status: todo
 aliases: [Nuclear Recoil, R_N, Weak Magnetism]
 cssclasses: []
-related_components: [[02-phase-space]], [[10-nuclear-structure]]
+related_components: [[02-phase-space]], [[nuclear-structure/01-shape-factors]]
 ---
 
 # Nuclear Recoil Effects — $R_N$, $Q$, and Induced Currents

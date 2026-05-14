@@ -6,14 +6,14 @@ tags:
 status: active
 aliases: [Atomic Screening, S(Z,W)]
 cssclasses: []
-related_components: [[12-atomic-overlap]], [[13-chemical-effects]]
+related_components: [[corrections/08-atomic-overlap]], [[corrections/09-chemical-effects]]
 ---
 
 # Atomic Electron Screening Correction $S(Z,W)$
 
 ## Physical Origin
 
-The Fermi function ([[01-fermi-function]]) assumes the β particle moves in the Coulomb field of a bare nucleus. In reality, atomic electrons partially screen this charge at large distances from the nucleus, modifying the effective potential experienced by the emitted electron/positron. This is particularly important at low kinetic energies where the β particle spends more time far from the nucleus.
+The Fermi function ([[corrections/01-fermi-function]]) assumes the β particle moves in the Coulomb field of a bare nucleus. In reality, atomic electrons partially screen this charge at large distances from the nucleus, modifying the effective potential experienced by the emitted electron/positron. This is particularly important at low kinetic energies where the β particle spends more time far from the nucleus.
 
 ## The Screening Correction
 
@@ -88,6 +88,6 @@ From Hayen et al. Table (Section VIII overview):
 
 ## Related Notes
 
-- [[12-atomic-overlap]] — Atomic mismatch / overlap correction $r(Z,W)$, Bahcall correction
-- [[13-chemical-effects]] — Molecular environment influence on screening and exchange
-- [[05-exchange-correction]] — Electron exchange with atomic orbitals (often combined with screening)
+- [[corrections/08-atomic-overlap]] — Atomic mismatch / overlap correction $r(Z,W)$, Bahcall correction
+- [[corrections/09-chemical-effects]] — Molecular environment influence on screening and exchange
+- [[corrections/04-exchange]] — Electron exchange with atomic orbitals (often combined with screening)

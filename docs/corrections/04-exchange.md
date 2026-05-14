@@ -6,7 +6,7 @@ tags:
 status: active
 aliases: [Atomic Exchange, X(Z,W), Hayen-2018]
 cssclasses: []
-related_components: [[04-screening-correction]], [[12-atomic-overlap]]
+related_components: [[corrections/03-screening]], [[corrections/08-atomic-overlap]]
 ---
 
 # Atomic Electron Exchange Correction $X(Z,W)$
@@ -37,7 +37,7 @@ Screening strength is adjusted for best agreement with bound state energies (dec
 
 ## Analytical Parametrisation — Hayen et al. 2018
 
-The exchange correction $X(W)$ as a function of kinetic energy uses empirical fit coefficients from Table X of [[refs/hayen-2018]]. Coefficients are tabulated for all atoms with $Z = 2$ through $z = 120$.
+The exchange correction $X(W)$ as a function of kinetic energy uses empirical fit coefficients from Table X of [[refs/electromagnetic/2017_Hayen_analytical_beta_shape/summary]]. Coefficients are tabulated for all atoms with $Z = 2$ through $z = 120$.
 
 ### Shell Structure Effects
 

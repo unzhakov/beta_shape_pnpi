@@ -1,5 +1,5 @@
 ---
-title: Beta Spectrum Wiki
+title: Beta Spectrum Calculator — Knowledge Base
 date: 2026-04-26
 tags:
   - vault/overview
@@ -12,60 +12,82 @@ This Obsidian vault serves as the scientific reference and development workspace
 
 ## Purpose
 
-Organize the physics theory behind allowed beta decay spectrum calculations into structured, interconnected notes that directly inform the implementation of correction components in the codebase.
+Organize the physics theory behind β-decay spectrum calculations into structured, interconnected notes that inform the implementation of correction components in the codebase.
 
 ## Source Material
 
 | Reference | Type | Location |
 |---|---|---|
-| Hayen et al., RevModPhys **90**, 015008 (2017) | Review article | `pdf_source/Hayen2017.pdf` / [[Hayen2017_summary]] |
+| Hayen et al., *Rev. Mod. Phys.* **90**, 015008 (2017) | Review article | [[refs/electromagnetic/2017_Hayen_analytical_beta_shape/summary]] |
 
-## Notes Structure
+## Directory Structure
 
-All notes are flat in this directory, linked via wikilinks.
-
-### Core Theory
-
-- [[00-beta-spectrum-overview]] — Master equation and overview of all corrections
-- [[02-phase-space]] — Baseline spectral shape $pW(W_0-W)^2$
-
-### Correction Components (mapped to calculator modules)
-
-| # | Note | Calculator Module | Status |
-|---|---|---|---|
-| 1 | [[01-fermi-function]] | `components/fermi.py` | ✓ implemented |
-| 2 | [[03-finite-size]] | `components/finite_size.py` | ✓ implemented |
-| 3 | [[04-screening-correction]] | `components/screening.py` | ✓ implemented |
-| 4 | [[05-exchange-correction]] | `components/exchange.py` | ✓ implemented |
-| 5 | [[06-radiative-corrections]] | `components/radiative.py` | ✓ implemented |
-| 6 | [[07-recoil-effects]] | `components/recoil.py` | ✗ not yet implemented |
-
-### Nuclear Structure & Atomic Effects
-
-- [[10-nuclear-structure]] — Shape factors, form factors, impulse approximation
-- [[11-isospin-breakdown]] — Shake-off/shake-up processes, endpoint shift
-- [[12-atomic-overlap]] — Bahcall correction, bound-state β decay
-- [[13-chemical-effects]] — Molecular environment influence on spectrum
-
-### References
-
-- [[refs/hayen2017]] — Metadata and key equations from Hayen et al. (2017)
+```
+docs/
+├── README.md                          ← You are here
+├── 00-beta-spectrum-overview.md       ← Master equation & full correction list
+├── 02-phase-space.md                  ← Baseline spectral shape
+├── corrections/                       ← All correction components
+│   ├── 01-fermi-function.md           ← Fermi function F₀(Z,W)
+│   ├── 02-finite-size.md              ← Nuclear size: L₀, U, DFS
+│   ├── 03-screening.md                ← Atomic screening S(Z,W)
+│   ├── 04-exchange.md                 ← Atomic exchange X(Z,W)
+│   ├── 05-radiative.md                ← Outer radiative R(W,W₀)
+│   ├── 06-recoil.md                   ← Recoil: R_N, Q, weak magnetism
+│   ├── 07-detector-response.md        ← Detector convolution
+│   ├── 08-atomic-overlap.md           ← Atomic mismatch r(Z,W)
+│   └── 09-chemical-effects.md         ← Molecular environment
+├── nuclear-structure/                 ← Nuclear theory
+│   ├── index.md                       ← Overview
+│   └── 01-shape-factors.md            ← C(Z,W), NMEs, impulse approximation
+├── gA-extraction/                     ← gA extraction (new, in development)
+│   ├── 01-ssm-algorithm.md            ← SSM step-by-step algorithm
+│   ├── 02-ssnme.md                    ← sNME and ESSM formalism
+│   ├── 03-tc99-case-study.md          ← 99Tc literature results
+│   └── 04-implementation-todo.md      ← Implementation TODO list
+└── refs/                              ← Paper summaries
+    ├── electromagnetic/               ← CVC, radiative corrections
+    ├── forbidden-decay/               ← Forbidden decay studies
+    └── (organized by topic)
+```
 
 ## Calculator Architecture
 
 ```
 SpectrumComponent (ABC, base.py)
- ├── PhaseSpace              → phase_space.py
- ├── FermiFunction           → fermi.py
- ├── FiniteSizeL0            → finite_size.py
- ├── ChargeDistributionU     → finite_size.py
- ├── ScreeningCorrection     → screening.py
- ├── ExchangeCorrection      → exchange.py
- └── RadiativeCorrection     → radiative.py
+ ├── PhaseSpace              → 02-phase-space.md
+ ├── FermiFunction           → corrections/01-fermi-function.md
+ ├── FiniteSizeL0            → corrections/02-finite-size.md
+ ├── ChargeDistributionU     → corrections/02-finite-size.md
+ ├── ScreeningCorrection     → corrections/03-screening.md
+ ├── ExchangeCorrection      → corrections/04-exchange.md
+ ├── RadiativeCorrection     → corrections/05-radiative.md
+ └── (recoil.py)             → corrections/06-recoil.md (not yet implemented)
 
 BetaSpectrum (spectrum.py) — multiplicative composition + from_config()
 BetaSpectrumAnalyzer (spectrum.py) — plotting, CSV export
 ```
+
+## Correction Implementation Status
+
+| # | Correction | Module | Note | Status |
+|---|---|---|---|---|
+| 1 | Phase space | `phase_space.py` | Baseline | ✓ implemented |
+| 2 | Fermi function | `fermi.py` | Coulomb interaction | ✓ implemented |
+| 3 | Finite size | `finite_size.py` | L₀, U, DFS | ✓ implemented |
+| 4 | Screening | `screening.py` | Atomic screening | ✓ implemented |
+| 5 | Exchange | `exchange.py` | Atomic exchange | ✓ implemented |
+| 6 | Radiative | `radiative.py` | Outer RC | ✓ implemented |
+| 7 | Recoil | `recoil.py` | R_N, Q, weak magnetism | ✗ not yet implemented |
+| 8 | Shape factor | `shape_factor_gA.py` | C(Z,W) for forbidden | — planned |
+| 9 | Detector | `detector_response.py` | Convolution | — planned |
+
+## gA Extraction (New)
+
+For forbidden nonunique decays (e.g., $^{99}\text{Tc}$), the shape factor depends on $g_A$ in a measurable way. See:
+
+- [[gA-extraction/01-ssm-algorithm]] — The SSM algorithm for extracting $g_A$ from spectral shapes
+- [[gA-extraction/04-implementation-todo]] — Step-by-step implementation plan
 
 ## Key Variables and Units
 
@@ -77,3 +99,7 @@ BetaSpectrumAnalyzer (spectrum.py) — plotting, CSV export
 - $\gamma = \sqrt{1 - (\alpha Z)^2}$
 
 Conversion: $W = 1 + T / m_e c^2$, with $m_e c^2 = 510.998950$ keV.
+
+## Precision Goal
+
+The calculator aims for **accurate to a few parts in $10^{-4}$ down to 1 keV** for low-to-medium $Z$ nuclei, following the approach of Hayen et al. (2017).

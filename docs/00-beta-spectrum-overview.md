@@ -25,19 +25,19 @@ $$N(W)\,dW = \frac{G_V^2 V_{ud}^2}{2\pi^3} F_0 L_0 U DFS R R_N Q S X r C D_C \; 
 
 | Symbol | Name | Module / Note | Status |
 |---|---|---|---|
-| $F_0(Z,W)$ | Point charge Fermi function | [[01-fermi-function]] | ✓ |
-| $L_0(Z,W)$ | Electrostatic finite size (uniform sphere) | [[03-finite-size]] | ✓ |
-| $U(Z,W)$ | Charge distribution correction | [[03-finite-size]] | ✓ |
-| $DFS(Z,W,\beta^2)$ | Nuclear deformation correction | [[03-finite-size]] | ✓ |
-| $R(W,W_0) = 1 + \delta_R$ | Outer radiative corrections | [[06-radiative-corrections]] | ✓ |
-| $R_N(W,W_0,M)$ | Recoil kinematic correction | [[07-recoil-effects]] | ✗ |
-| $Q(Z,W,M)$ | Recoil electromagnetic correction | [[07-recoil-effects]] | — |
-| $S(Z,W)$ | Atomic electron screening | [[04-screening-correction]] | ✓ |
-| $X(Z,W)$ | Atomic exchange effect | [[05-exchange-correction]] | ✓ |
-| $r(Z,W)$ | Atomic mismatch / overlap | [[12-atomic-overlap]] | — |
-| $A(Z,W) = S \cdot X \cdot r$ | Combined atomic factors | [[12-atomic-overlap]] | — |
-| $C(Z,W)$ | Nuclear structure shape factor | [[10-nuclear-structure]] | — |
-| $D_C(Z,W,\beta^2)$ | Nuclear deformation (convolution) | [[10-nuclear-structure]] | — |
+| $F_0(Z,W)$ | Point charge Fermi function | [[corrections/01-fermi-function]] | ✓ |
+| $L_0(Z,W)$ | Electrostatic finite size (uniform sphere) | [[corrections/02-finite-size]] | ✓ |
+| $U(Z,W)$ | Charge distribution correction | [[corrections/02-finite-size]] | ✓ |
+| $DFS(Z,W,\beta^2)$ | Nuclear deformation correction | [[corrections/02-finite-size]] | ✓ |
+| $R(W,W_0) = 1 + \delta_R$ | Outer radiative corrections | [[corrections/05-radiative]] | ✓ |
+| $R_N(W,W_0,M)$ | Recoil kinematic correction | [[corrections/06-recoil]] | ✗ |
+| $Q(Z,W,M)$ | Recoil electromagnetic correction | [[corrections/06-recoil]] | — |
+| $S(Z,W)$ | Atomic electron screening | [[corrections/03-screening]] | ✓ |
+| $X(Z,W)$ | Atomic exchange effect | [[corrections/04-exchange]] | ✓ |
+| $r(Z,W)$ | Atomic mismatch / overlap | [[corrections/08-atomic-overlap]] | — |
+| $A(Z,W) = S \cdot X \cdot r$ | Combined atomic factors | [[corrections/08-atomic-overlap]] | — |
+| $C(Z,W)$ | Nuclear structure shape factor | [[nuclear-structure/01-shape-factors]] | — |
+| $D_C(Z,W,\beta^2)$ | Nuclear deformation (convolution) | [[nuclear-structure/01-shape-factors]] | — |
 
 ## Baseline: Phase Space
 
@@ -49,7 +49,7 @@ with $p = \sqrt{W^2-1}$, $W$ total energy in units of $m_e$, and $W_0$ the endpo
 
 ## Precision Goal
 
-The paper achieves **accurate to a few parts in $10^{-4}$ down to 1 keV** for low-to-medium $Z$ nuclei — extending previous work by nearly an order of magnitude [[Hayen2017_summary]].
+The Hayen paper achieves **accurate to a few parts in $10^{-4}$ down to 1 keV** for low-to-medium $Z$ nuclei — extending previous work by nearly an order of magnitude [[refs/electromagnetic/2017_Hayen_analytical_beta_shape/summary]].
 
 > [!key] Why this matters
 > A precision of ~0.5% is required when determining the Fierz term $b_{\text{Fierz}}$ to improve limits on BSM scalar/tensor couplings. Weak magnetism $b_{wm}$ must be included as experimental precision increases, otherwise it limits BSM sensitivity.

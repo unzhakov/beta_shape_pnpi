@@ -6,18 +6,18 @@ tags:
 status: active
 aliases: [Finite Nuclear Size, L_0, U, DFS]
 cssclasses: []
-related_components: [[01-fermi-function]], [[10-nuclear-structure]]
+related_components: [[corrections/01-fermi-function]], [[nuclear-structure/01-shape-factors]]
 ---
 
 # Finite Nuclear Size Effects — $L_0$, $U(Z,W)$, and $DFS$
 
 ## Overview
 
-The Fermi function ([[01-fermi-function]]) assumes a point charge nucleus. Real nuclei have finite extent and possibly deformation — these corrections account for the difference in electric potential inside the nuclear volume.
+The Fermi function ([[corrections/01-fermi-function]]) assumes a point charge nucleus. Real nuclei have finite extent and possibly deformation — these corrections account for the difference in electric potential inside the nuclear volume.
 
 > [!note] Two types of "finite size"
 > 1. **Electrostatic** ($L_0$, $U$, $DFS$): Potential difference when moving from point charge to realistic nuclear shape — applied *after* evaluating wave function at origin
-> 2. **Convolution**: Integration of leptonic wave functions over the nuclear volume — appears in shape factor $C(Z,W)$ ([[10-nuclear-structure]])
+> 2. **Convolution**: Integration of leptonic wave functions over the nuclear volume — appears in shape factor $C(Z,W)$ ([[nuclear-structure/01-shape-factors]])
 
 ## Nuclear Radius
 
@@ -109,7 +109,7 @@ $$DFS(Z,W,\beta) = \frac{L_0^*(Z,W)}{L_0(Z,W)} \tag{40}$$
 where $L_0^*$ integrates over a continuous superposition of uniformly charged spheres (Eq. 39).
 
 > [!tip] Magnitude
-> Effect can reach several parts in $10^3$. Partially canceled by nuclear structure deformation correction $D_C$ ([[10-nuclear-structure]]). Figure 1 of Hayen shows energy dependence reversal between β⁻ and β⁺ for $\beta_2 = 0.2$.
+> Effect can reach several parts in $10^3$. Partially canceled by nuclear structure deformation correction $D_C$ ([[nuclear-structure/01-shape-factors]]). Figure 1 of Hayen shows energy dependence reversal between β⁻ and β⁺ for $\beta_2 = 0.2$.
 
 ### Calculator Implementation
 

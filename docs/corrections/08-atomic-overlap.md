@@ -6,7 +6,7 @@ tags:
 status: active
 aliases: [Atomic Mismatch, Bahcall Correction, r(Z,W)]
 cssclasses: []
-related_components: [[04-screening-correction]], [[13-chemical-effects]]
+related_components: [[corrections/03-screening]], [[corrections/09-chemical-effects]]
 ---
 
 # Atomic Overlap / Mismatch Correction $r(Z,W)$
@@ -70,6 +70,6 @@ $$\frac{\Gamma_b}{\Gamma_c} = \frac{\pi(\alpha Z)^3}{f(Z,W_0)} (W_0 - 1)^2 \Sigm
 
 ## Related Notes
 
-- [[04-screening-correction]] — Screening modification from shake-up processes
-- [[11-isospin-breakdown]] — Shake-off process correction
-- [[13-chemical-effects]] — Molecular environment influence on atomic overlap
+- [[corrections/03-screening]] — Screening modification from shake-up processes
+-  — Shake-off process correction
+- [[corrections/09-chemical-effects]] — Molecular environment influence on atomic overlap
