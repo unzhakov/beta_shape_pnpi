@@ -22,48 +22,48 @@ related_notes:
 
 The old files in `tests/` root contain tests that are now covered by the new structure. Remove them:
 
-- [ ] **1.1** Remove `tests/test_fermi.py` — covered by `tests/physics/test_fermi.py` + `tests/quality/test_api_fermi.py`
-- [ ] **1.2** Remove `tests/test_finite_size.py` — covered by `tests/physics/test_finite_size.py` + `tests/quality/test_api_finite_size.py`
-- [ ] **1.3** Remove `tests/test_screening.py` — covered by `tests/physics/test_screening.py` + `tests/quality/test_api_screening.py`
-- [ ] **1.4** Remove `tests/test_exchange.py` — covered by `tests/physics/test_exchange.py` + `tests/quality/test_api_exchange.py`
-- [ ] **1.5** Remove `tests/test_radiative.py` — covered by `tests/physics/test_radiative.py` + `tests/quality/test_api_radiative.py`
-- [ ] **1.6** Remove `tests/test_phase_space.py` — covered by `tests/physics/test_phase_space.py` + `tests/quality/test_api_phase_space.py`
+- [x] **1.1** Remove `tests/test_fermi.py` — covered by `tests/physics/test_fermi.py` + `tests/quality/test_api_fermi.py`
+- [x] **1.2** Remove `tests/test_finite_size.py` — covered by `tests/physics/test_finite_size.py` + `tests/quality/test_api_finite_size.py`
+- [x] **1.3** Remove `tests/test_screening.py` — covered by `tests/physics/test_screening.py` + `tests/quality/test_api_screening.py`
+- [x] **1.4** Remove `tests/test_exchange.py` — covered by `tests/physics/test_exchange.py` + `tests/quality/test_api_exchange.py`
+- [x] **1.5** Remove `tests/test_radiative.py` — covered by `tests/physics/test_radiative.py` + `tests/quality/test_api_radiative.py`
+- [x] **1.6** Remove `tests/test_phase_space.py` — covered by `tests/physics/test_phase_space.py` + `tests/quality/test_api_phase_space.py`
 
-**After removal**: ~136 old tests remain (fitter, spectrum, detector, cw_extractor, multi_branch, nuclear_data, logging).
+**After removal**: ~136 tests remain in new structure (fitter, spectrum, detector, cw_extractor, multi_branch, nuclear_data, logging).
 
 ## Phase 2: Migrate remaining old tests (P1 — high priority)
 
 Move the remaining old tests to the new structure:
 
 ### 2.1 Integration tests → `tests/integration/`
-- [ ] **2.1.1** `tests/test_spectrum.py` → `tests/integration/test_spectrum_pipeline.py`
+- [x] **2.1.1** `tests/test_spectrum.py` → `tests/integration/test_spectrum_pipeline.py`
   - Full pipeline tests (from_config → evaluate → components)
   - Declarative detector response tests
   - These are integration tests, not component tests
 
 ### 2.2 Physics tests → `tests/physics/`
-- [ ] **2.2.1** `tests/test_detector_response.py` → `tests/physics/test_detector_response.py`
+- [x] **2.2.1** `tests/test_detector_response.py` → `tests/physics/test_detector_response.py` (split into physics + quality)
   - 23 tests — physics behavior (normalization, resolution, convolution)
   - Split into: `test_detector_response.py` (physics) + `tests/quality/test_api_detector_response.py` (API)
 
-- [ ] **2.2.2** `tests/test_fitter.py` → `tests/physics/test_fitter.py`
+- [x] **2.2.2** `tests/test_fitter.py` → `tests/physics/test_fitter.py`
   - 16 tests — fit quality, covariance, confidence intervals
   - Split: physics (fit quality) + quality (API)
 
-- [ ] **2.2.3** `tests/test_cw_extractor.py` → `tests/physics/test_cw_extractor.py`
+- [x] **2.2.3** `tests/test_cw_extractor.py` → `tests/physics/test_cw_extractor.py`
   - 18 tests — shape factor extraction accuracy
   - Split: physics (extraction) + quality (API)
 
-- [ ] **2.2.4** `tests/test_multi_branch.py` → `tests/physics/test_multi_branch.py`
+- [x] **2.2.4** `tests/test_multi_branch.py` → `tests/physics/test_multi_branch.py`
   - 26 tests — multi-branch physics
   - Split: physics (branching) + quality (API)
 
-- [ ] **2.2.5** `tests/test_nuclear_data.py` → `tests/quality/test_nuclear_data.py`
+- [x] **2.2.5** `tests/test_nuclear_data.py` → `tests/quality/test_nuclear_data.py`
   - 21 tests — mostly API/parsing tests
   - These are quality tests (input validation, parsing)
 
 ### 2.3 Quality tests → `tests/quality/`
-- [ ] **2.3.1** `tests/test_logging_utils.py` → `tests/quality/test_logging_utils.py`
+- [x] **2.3.1** `tests/test_logging_utils.py` → `tests/quality/test_logging_utils.py`
   - 23 tests — all API tests (no physics)
   - Direct move, no splitting needed
 
@@ -74,9 +74,9 @@ Move the remaining old tests to the new structure:
   - Verify CSV export matches reimport
 
 ## Phase 4: Clean up (P3)
-- [ ] **4.1** Remove old `tests/test_*.py` files that were migrated
-- [ ] **4.2** Verify all tests pass: `python3 -m pytest tests/ -v`
-- [ ] **4.3** Verify test count matches expected: ~136 (was 230, removed ~94 duplicates)
+- [x] **4.1** Remove old `tests/test_*.py` files that were migrated
+- [x] **4.2** Verify all tests pass: `python3 -m pytest tests/ -v` ✅ 251 passed
+- [ ] **4.3** Verify test count matches expected (see below)
 - [ ] **4.4** Update `docs/test-architecture.md` with final structure
 - [ ] **4.5** Add `.gitkeep` to `tests/common/`, `tests/integration/` directories
 
