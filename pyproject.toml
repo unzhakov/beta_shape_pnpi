@@ -58,6 +58,8 @@ markers = [
     "slow: Tests that take >1s to run",
     "requires_ensdf: Tests requiring paceENSDF package",
 ]
+timeout = 30
+timeout_method = "thread"
 
 [tool.ruff]
 line-length = 88

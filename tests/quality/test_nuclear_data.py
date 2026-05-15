@@ -229,6 +229,7 @@ class TestDecayInfoToConfig:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.requires_ensdf
 @pytest.mark.skipif(not _has_paceENSDF(), reason="paceENSDF not installed")
 class TestPaceENSDFIntegration:
     """Test paceENSDF data retrieval."""
