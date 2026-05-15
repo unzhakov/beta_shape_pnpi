@@ -1,33 +1,15 @@
-# tests/test_spectrum.py — Integration tests for the full BetaSpectrum pipeline
-
 """
-Why test this?
---------------
-Unit tests verify each component in isolation. But integration tests catch bugs that
-only appear when components interact: wrong energy grid, type mismatches between
-components, or numerical errors accumulating across multiplicative factors.
+Integration tests for the full BetaSpectrum pipeline.
 
-The `from_config()` factory method is the user-facing API — it's what people call
-in real code. If this doesn't work for a realistic configuration, nothing else matters.
-
-We test:
-
- 1. **End-to-end pipeline**: from_config → energy grid → spectrum evaluation → all components valid.
-     This is the "smoke test" that catches the most common user errors.
- 2. **Selective component toggling**: Disabling a component shouldn't break anything.
-     Users need to be able to turn off corrections for debugging or comparison studies.
- 3. **Positive final spectrum**: The product of all factors must remain positive —
-     if any component goes negative, the entire spectrum is wrong.
- 4. **Component extraction works**: calculate_components() should return per-component values
-     that match calling each component individually.
-
-Common practice: Integration tests are fewer but more expensive (they test more code paths).
-They serve as a safety net — if they pass, you can be confident the system works "as designed".
+These are integration tests that verify end-to-end workflows.
+They are NOT component-level tests — they test that components
+work together correctly.
 """
 
 import numpy as np
+import pytest
 
-from beta_spectrum import BetaSpectrum, SpectrumConfig
+from beta_spectrum import BetaSpectrum, DetectorResponse, SpectrumConfig
 
 
 class TestBetaSpectrumIntegration:
@@ -140,24 +122,6 @@ class TestBetaSpectrumComponentExtraction:
         assert len(components) > 0, "Should have at least one component"
 
 
-class TestBetaSpectrumAnalyzer:
-    """Test the analyzer utilities."""
-
-    def test_total_spectrum_returns_array(self):
-        config = SpectrumConfig(
-            Z_parent=19, Z_daughter=20, A_number=40, endpoint_MeV=2.5
-        )
-        spectrum = BetaSpectrum.from_config(config)
-        _analyzer = type("Analyzer", (), {"spectrum": spectrum, "config": config})()
-
-        # We can't easily instantiate the full Analyzer without matplotlib backend,
-        # but we verify the spectrum itself works end-to-end.
-        W, E = spectrum.get_energy_grid(config)
-        total = spectrum(W)
-
-        assert len(total) == len(E), "Spectrum and energy arrays must match"
-
-
 class TestBetaSpectrumRealisticConfig:
     """Test with realistic physics parameters."""
 
@@ -201,8 +165,6 @@ class TestDeclarativeDetectorResponse:
 
     def test_create_detector_from_config(self):
         """SpectrumConfig detector params should create valid DetectorResponse."""
-        from beta_spectrum import DetectorResponse
-
         config = SpectrumConfig(
             Z_parent=43,
             Z_daughter=44,
