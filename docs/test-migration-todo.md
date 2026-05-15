@@ -75,12 +75,21 @@ Move the remaining old tests to the new structure:
 
 ## Phase 4: Clean up (P3)
 - [x] **4.1** Remove old `tests/test_*.py` files that were migrated
-- [x] **4.2** Verify all tests pass: `python3 -m pytest tests/ -v` ✅ 251 passed
-- [ ] **4.3** Verify test count matches expected (see below)
-- [ ] **4.4** Update `docs/test-architecture.md` with final structure
-- [ ] **4.5** Add `.gitkeep` to `tests/common/`, `tests/integration/` directories
+- [x] **4.2** Verify all tests pass: `python3 -m pytest tests/ -v` ✅ 256 passed
+- [x] **4.3** Verify test count matches expected
+- [x] **4.4** Update `docs/test-architecture.md` with final structure
+- [x] **4.5** Add `.gitkeep` to `tests/common/`, `tests/integration/` directories
 
 ## Phase 5: Advanced improvements (P4 — nice to have)
+- [x] **5.1** Add `pytest-timeout` (30s, thread-based) to pyproject.toml
+- [x] **5.2** Add `pytest.mark.requires_ensdf` marker to ENSDF tests
+- [x] **5.3** Add `hypothesis` for property-based edge case discovery
+  - 5 new tests in `tests/common/test_hypothesis_tests.py`
+  - Random Z, A, W for Fermi function
+  - Random W0, W for phase space
+  - Hypothesis already found real bugs (see commit message)
+- [ ] **5.4** Add `pytest-timeout` to prevent hangs (already done in 5.1)
+- [ ] **5.5** Add CI badge for test status (nice to have)
 - [ ] **5.1** Add `pytest.mark.slow` to long-running tests
 - [ ] **5.2** Add `pytest.mark.requires_ensdf` to tests needing paceENSDF
 - [ ] **5.3** Consider adding `hypothesis` for property-based testing of edge cases
