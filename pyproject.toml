@@ -49,6 +49,15 @@ line-length = 88
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "notebooks"]
+markers = [
+    "property: Physics property tests (positivity, monotonicity, limits)",
+    "physics: Physics behavior tests (energy dependence, Z dependence)",
+    "api: API contract tests (signatures, return types, error handling)",
+    "quality: Code quality tests (shape, type, NaN, stability)",
+    "integration: Full pipeline integration tests",
+    "slow: Tests that take >1s to run",
+    "requires_ensdf: Tests requiring paceENSDF package",
+]
 
 [tool.ruff]
 line-length = 88
