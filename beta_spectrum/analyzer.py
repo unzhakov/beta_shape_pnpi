@@ -195,8 +195,7 @@ class BetaSpectrumAnalyzer:
         header = (
             f"{parent}{self.config.A_number} -> {daughter}{self.config.A_number}  "
             f"|  E₀={self.config.endpoint_MeV * 1000:.1f} keV  "
-            f"|  ΔE={e_step_keV:.1f} keV  "
-            f"|  {self.config.transition_type}"
+            f"|  ΔE={e_step_keV:.1f} keV"
         )
         fig.text(
             0.01, 0.98, header,
