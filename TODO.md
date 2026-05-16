@@ -4,9 +4,95 @@
 
 Extract the shape factor C(W) from the experimentally measured beta spectrum of ⁹⁹Tc, and parametrize C(W) via the vector coupling constant g_V from the theory of beta decay.
 
-This requires repeating the analysis pipeline of [Paulsen et al., Phys. Rev. C **110**, 055503 (2024)](https://doi.org/10.1103/PhysRevC.110.055503), which used Metallic Magnetic Calorimeters (MMCs) to measure the ⁹⁹Tc beta spectrum with sub-keV threshold and ~100 eV resolution.
+This requires repeating the analysis pipeline of [Paulsen et al., Phys. Rev. C **110**, 055503 (2024)](https://doi.org/10.1103/PhysRevC/110/055503), which used Metallic Magnetic Calorimeters (MMCs) to measure the ⁹⁹Tc beta spectrum with sub-keV threshold and ~100 eV resolution.
 
 See `docs/refs/2024_Paulsen_T99_beta_spectrum/summary.md` for full analysis details.
+
+______________________________________________________________________
+
+## Package Architecture (v0.4.0 — In Progress)
+
+### Current State (v0.3.x)
+
+Everything lives in `beta_spectrum/` — a monolithic package where theory, fitting, detector response, and analysis are intermingled. This is becoming unwieldy.
+
+### Target Architecture (v0.4.0)
+
+```
+beta_spectrum/              ← theory-only core
+├── __init__.py
+├── base.py                 ← SpectrumComponent base
+├── constants.py            ← physical constants
+├── utils.py                ← T_to_W, W_to_T, momentum
+├── spectrum.py             ← BetaSpectrum, SpectrumConfig, BranchConfig
+├── components/             ← individual correction factors
+│   ├── phase_space.py
+│   ├── fermi.py
+│   ├── finite_size.py
+│   ├── screening.py
+│   ├── exchange.py
+│   ├── radiative.py
+│   └── detector_response.py   ← stays here (part of theory)
+└── nuclear_data.py         ← paceENSDF integration
+
+exp_data/                   ← experimental data handling
+├── __init__.py
+├── raw_data.py             ← raw data loading (ROOT, CSV, ASCII)
+├── calibration.py          ← energy calibration, line fitting
+├── fitters.py              ← simple Gaussian fitters for cal sources
+├── corrections.py          ← dead-time, pile-up, background
+└── spectrum.py             ← experimental spectrum container
+
+fitter/                     ← main analysis framework
+├── __init__.py
+├── model.py                ← theoretical model + detector convolution
+├── fit_engine.py           ← multi-parameter fitting orchestration
+├── extractor.py            ← C(W), g_V, g_A extraction
+├── result.py               ← FitResult, analysis results
+└── report.py               ← PDF report generation
+
+analyzer/                   ← visualization (stays as-is)
+└── analyzer.py             ← BetaSpectrumAnalyzer
+```
+
+### Rationale
+
+- **`beta_spectrum`** — pure theory. Given a nuclide and corrections, produces a theoretical spectrum. No fitting, no data, no detector convolution.
+- **`exp_data`** — experimental data handling. Loading raw detector outputs, calibrating energy scale, fitting calibration peaks, applying instrumental corrections.
+- **`fitter`** — the analysis workhorse. Takes theory model + detector response + experimental data → performs convolution + fitting → extracts physics parameters.
+
+### Migration Plan
+
+#### Phase 1: Create `exp_data` module
+- [ ] `exp_data/raw_data.py` — load experimental spectra from various formats (CSV, ROOT, ASCII)
+- [ ] `exp_data/calibration.py` — energy calibration using known lines (X-rays, gammas)
+- [ ] `exp_data/fitters.py` — simple Gaussian + background fitters for calibration peaks
+- [ ] `exp_data/corrections.py` — dead-time, pile-up, background subtraction
+- [ ] `exp_data/spectrum.py` — `ExpSpectrum` dataclass: energies, counts, errors, metadata
+- [ ] Move experimental data tests from `tests/integration/` → `tests/exp_data/`
+
+#### Phase 2: Create `fitter` module
+- [ ] `fitter/model.py` — `TheoreticalModel` class: wraps `BetaSpectrum` + `DetectorResponse`, provides `evaluate(E)` that includes convolution
+- [ ] `fitter/fit_engine.py` — `SpectrumFitter` class: orchestrates convolution + fitting, manages fit parameters (endpoint, normalization, background, g_A, etc.)
+- [ ] `fitter/extractor.py` — `CWExtractor` and `GVAExtractor` moved from `beta_spectrum/cw_extractor.py`
+- [ ] `fitter/result.py` — `AnalysisResult` class: wraps `FitResult` with physics-specific metadata (nuclide, endpoint, extracted C(W), g_V, g_A)
+- [ ] Move `CurveFitter` / `FitConfig` / `FitResult` from `beta_spectrum/fitter.py` → `fitter/fit_engine.py` (or keep as shared utility)
+- [ ] Move detector response convolution from `beta_spectrum/components/detector_response.py` → `fitter/model.py` (or keep `DetectorResponse` class in `beta_spectrum` as a data structure)
+
+#### Phase 3: Clean up `beta_spectrum`
+- [ ] Remove `cw_extractor.py` (moved to `fitter/`)
+- [ ] Remove `fitter.py` (moved to `fitter/`)
+- [ ] Move `DetectorResponse` to `beta_spectrum/components/detector_response.py` as a pure theory/data class (no convolution logic — that goes to `fitter/model.py`)
+- [ ] Clean up `__init__.py` — only export theory classes + DetectorResponse data class
+- [ ] Remove CLI `bs_pnpi` from `beta_spectrum` (move to a `bin/` or `scripts/` directory as a standalone tool)
+
+#### Phase 4: Update package structure
+- [ ] Update `pyproject.toml` — add `exp_data` and `fitter` as subpackages
+- [ ] Update `__init__.py` at root level if needed
+- [ ] Move CLI entry point to a separate package or keep as `beta_spectrum.cli` with re-exports
+- [ ] Update all imports across tests
+- [ ] Run full test suite
+- [ ] Update documentation
 
 ______________________________________________________________________
 
@@ -225,11 +311,28 @@ ______________________________________________________________________
 
 ## Current Status
 
-**Version:** 0.3.1\n
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. Multi-branch decay support with per-branch calculators and intensity-weighted sum. CLI interface (`bs_pnpi`) with paceENSDF integration (`--nuclide`), structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers with branch info. JSON input with full detector param support. paceENSDF integration: `get_decay_info_from_paceENSDF()` returns DecayInfo with Z, A, endpoint, transition type (from forbiddenness), half-life, spin/parity, and full branch list; `decay_info_to_config()` converts to SpectrumConfig with branches; `create_config_from_source("paceENSDF", nuclide="Tc99")` one-liner; `_parse_nuclide_symbol()` for Z=1..98; FORBIDDENNESS_MAP; CLI `--nuclide` uses it automatically. Comprehensive test suite (262 tests, including 6 paceENSDF integration tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Version:** 0.3.1 → **In progress: 0.4.0 — Package restructuring**
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B1 — paceENSDF integration (full nuclear data retrieval: Q-value, half-life, spin/parity, branches, forbiddenness, log_ft; CLI `--nuclide` auto-lookup). B2 — input flexibility (JSON input, ENSDF auto-population). B3 — multi-branch decay support (BranchConfig, per-branch calculators, intensity weighting, branch-aware CSV export and plotting, per-branch transition types from ENSDF, `--intensity-cutoff` CLI option, raw-value plotting where total = sum of branches). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
+### Completed (v0.3.x)
+- All theoretical corrections: phase space, Fermi function, finite size, screening, exchange, radiative (with delta_cut resummation)
+- Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API
+- χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, correlation analysis
+- C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, g_V/g_A extraction
+- Multi-branch decay support (unified single/multi-branch)
+- CLI interface (`bs_pnpi`) with paceENSDF integration (`--nuclide`), structured logging (-v/-vv/-q), --dry-run, --version, --log-file
+- CSV metadata headers with branch info
+- JSON input with full detector param support
+- paceENSDF integration: `get_decay_info_from_paceENSDF()` returns DecayInfo with Z, A, endpoint, transition type, half-life, spin/parity, branches
+- Comprehensive test suite (262 tests, including 6 paceENSDF integration tests)
+- Notebook quality control with nbmake and auto-save plot hooks
+- Plot output: unified multi-branch approach, externalized headers, compact legends, consistent titles
 
-**Bug fix (v0.3.1):** Fixed `decay_info_to_config()` to pass branches to `SpectrumConfig` (was dropping them, causing `create_config_from_source("paceENSDF")` to return single-branch config). Added `BranchConfig` import to `nuclear_data.py`.
+### In Progress (v0.4.0)
+- **Track B: Package restructuring** — separating into `beta_spectrum` (theory), `exp_data` (experimental data), `fitter` (analysis framework)
+  - Phase 1: Create `exp_data` module (raw data loading, calibration, simple fitters, corrections)
+  - Phase 2: Create `fitter` module (theoretical model + convolution, multi-parameter fitting, C(W) extraction)
+  - Phase 3: Clean up `beta_spectrum` (remove CWExtractor, CurveFitter, detector convolution)
+  - Phase 4: Update package structure, imports, tests, documentation
 
-**Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).
+### Next Immediate Step
+- **v0.4.0 Phase 1:** Create `exp_data/` module with `raw_data.py`, `calibration.py`, `fitters.py`, `corrections.py`, `spectrum.py`
