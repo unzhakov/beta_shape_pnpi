@@ -51,8 +51,8 @@ fitter/                     ← main analysis framework
 ├── result.py               ← FitResult, analysis results
 └── report.py               ← PDF report generation
 
-analyzer/                   ← visualization (stays as-is)
-└── analyzer.py             ← BetaSpectrumAnalyzer
+visualize/                  ← visualization / plotting
+└── visualize/__init__.py   ← BetaSpectrumAnalyzer
 ```
 
 ### Rationale

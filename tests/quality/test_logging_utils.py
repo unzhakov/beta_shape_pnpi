@@ -131,7 +131,7 @@ class TestCSVMetadataHeader:
 
     def test_header_contains_version(self):
         from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+        from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -159,7 +159,7 @@ class TestCSVMetadataHeader:
 
     def test_header_contains_timestamp(self):
         from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+        from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -186,7 +186,7 @@ class TestCSVMetadataHeader:
 
     def test_header_contains_nuclide_info(self):
         from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+        from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -214,7 +214,7 @@ class TestCSVMetadataHeader:
 
     def test_header_contains_git_commit(self):
         from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+        from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -241,7 +241,7 @@ class TestCSVMetadataHeader:
 
     def test_header_contains_corrections(self):
         from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+        from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,

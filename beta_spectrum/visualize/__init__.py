@@ -1,7 +1,7 @@
 """
-Analyzer module — BetaSpectrumAnalyzer class.
+Visualize module — BetaSpectrumAnalyzer class.
 
-Introspection, analysis, and debugging tools for BetaSpectrum.
+Visualization and plotting tools for BetaSpectrum.
 All nuclides (single- and multi-branch) are treated uniformly as one or more
 branches — single-branch is just a special case with one branch.
 """

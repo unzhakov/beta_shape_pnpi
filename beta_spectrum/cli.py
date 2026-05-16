@@ -199,7 +199,7 @@ def _run(args: argparse.Namespace) -> None:
         BranchConfig,
         SpectrumConfig,
     )
-    from beta_spectrum.analyzer import BetaSpectrumAnalyzer
+    from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
     # Determine logging level
     if args.quiet:
