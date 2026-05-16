@@ -75,10 +75,13 @@ beta_shape_pnpi/
 │   ├── test_fitter.py           # Curve fitter tests
 │   ├── test_cw_extractor.py     # C(W) extraction tests
 │   └── test_nuclear_data.py     # paceENSDF + JSON input tests (23 tests)
-└── data/
-    ├── exchange_coeff.csv         # Tabulated coefficients for X(Z,W), Z=2..120
-    └── custom_input_example.json  # Sample JSON input file
+├── data/
+│   ├── exchange_coeff.csv         # Tabulated coefficients for X(Z,W), Z=2..120
+│   └── custom_input_example.json  # Sample JSON input file
 ├── output/                      # Test run outputs (gitignored except .gitkeep)
+├── AGENTS.md                    # Agent instructions: stack, git workflow, TDD, quality gates
+├── CONVENTIONS.md               # Physics conventions: natural units, energy representation, component design
+├── TODO.md                      # Development roadmap
 ```
 
 ______________________________________________________________________
