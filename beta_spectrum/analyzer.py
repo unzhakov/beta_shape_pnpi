@@ -18,7 +18,7 @@ from beta_spectrum.logging_utils import get_git_short_hash
 from beta_spectrum.utils import T_to_W
 
 if TYPE_CHECKING:
-    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
     from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
     from beta_spectrum.components.detector_response import DetectorResponse
@@ -127,6 +127,50 @@ class BetaSpectrumAnalyzer:
 
         return convolved
 
+    def _build_figure_header(self, fig: "Figure") -> None:
+        """Add a compact header with nuclide info, e_step, commit and timestamp outside axes."""
+        parent = self._element_symbol(self.config.Z_parent)
+        daughter = self._element_symbol(self.config.Z_daughter)
+        e_step_keV = self.config.e_step_MeV * 1000
+        header = (
+            f"{parent}{self.config.A_number} -> {daughter}{self.config.A_number}  "
+            f"|  E₀={self.config.endpoint_MeV * 1000:.1f} keV  "
+            f"|  ΔE={e_step_keV:.1f} keV  "
+            f"|  {self.config.transition_type}"
+        )
+        fig.text(
+            0.01, 0.98, header,
+            transform=fig.transFigure, fontsize=9,
+            verticalalignment="top", horizontalalignment="left",
+            fontfamily="monospace",
+        )
+        id_text = f"{get_git_short_hash(6)}  |  {self._timestamp}"
+        fig.text(
+            0.01, 0.01, id_text,
+            transform=fig.transFigure, fontsize=8,
+            verticalalignment="bottom", horizontalalignment="left",
+            fontfamily="monospace", color="gray",
+        )
+
+    def _build_figure_title(self, fig: "Figure") -> str:
+        """Build a unified figure title and return the figure for suptitle."""
+        parent = self._element_symbol(self.config.Z_parent)
+        daughter = self._element_symbol(self.config.Z_daughter)
+        n = self.config.A_number
+        title = f"Beta-decay: {n}{parent} -> {n}{daughter}"
+        if self._is_multi and self.spectrum.branches:
+            title += f" ({len(self.spectrum.branches)} branches)"
+        return title
+
+    def _format_branch_label(self, i: int) -> str:
+        """Abbreviated branch label for legend."""
+        if i >= len(self.spectrum.branches):
+            return f"Br. {i+1}"
+        branch = self.spectrum.branches[i]
+        e0 = branch.endpoint_MeV * 1000
+        intensity_pct = branch.intensity * 100
+        return f"Br. {i+1}: {e0:.1f} keV ({intensity_pct:.1f}%)"
+
     def plot_analysis(
         self,
         save_path: Optional[str] = None,
@@ -151,110 +195,44 @@ class BetaSpectrumAnalyzer:
         """
         total = self.total_spectrum(normalize=True)
         components = self.components
-        commit = get_git_short_hash(6)
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        self._timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         if self._is_multi:
             if show_components:
                 self._plot_multi_branch_debug(
-                    total, components, save_path, commit, timestamp
+                    total, components, save_path
                 )
             else:
                 self._plot_multi_branch_spectra(
-                    total, components, save_path, commit, timestamp
+                    total, components, save_path
                 )
         else:
             if show_components:
-                self._plot_debug_view(total, components, save_path, commit, timestamp)
+                self._plot_debug_view(total, components, save_path)
             else:
-                self._plot_spectrum_only(total, save_path, commit, timestamp)
-
-    def _add_id_textbox(self, ax: "Axes", commit: str, timestamp: str) -> None:
-        """Add ID text box with commit hash and timestamp to plot."""
-        id_text = f"commit: {commit}  |  {timestamp}"
-        ax.text(
-            0.01,
-            0.01,
-            id_text,
-            transform=ax.transAxes,
-            fontsize=8,
-            color="gray",
-            verticalalignment="bottom",
-            horizontalalignment="left",
-            fontfamily="monospace",
-        )
-
-    def _add_nuclear_data_header(self, ax: "Axes") -> None:
-        """Add nuclear data information header to plot."""
-        parent = self._element_symbol(self.config.Z_parent)
-        daughter = self._element_symbol(self.config.Z_daughter)
-
-        enabled_corrections = []
-        if self.config.use_phase_space:
-            enabled_corrections.append("phase_space")
-        if self.config.use_fermi:
-            enabled_corrections.append("fermi")
-        if self.config.use_screening:
-            enabled_corrections.append("screening")
-        if self.config.use_finite_size:
-            enabled_corrections.append("finite_size")
-        if self.config.use_charge_dist:
-            enabled_corrections.append("charge_dist")
-        if self.config.use_radiative:
-            enabled_corrections.append("radiative")
-        if self.config.use_exchange:
-            enabled_corrections.append("exchange")
-
-        header_lines = [
-            f"Nuclide:    {parent}{self.config.A_number} -> {daughter}{self.config.A_number}",
-            f"Endpoint:   {self.config.endpoint_MeV * 1000:.1f} keV",
-            f"Transition: {self.config.transition_type}",
-            f"Corrections: {', '.join(enabled_corrections)}",
-        ]
-
-        if self.config.use_detector_response:
-            header_lines.append(
-                f"Detector:   {self.config.detector_model} "
-                f"(σ={self.config.detector_sigma_a_keV} keV)"
-            )
-
-        header_text = "\n".join(header_lines)
-        ax.text(
-            0.99,
-            0.99,
-            header_text,
-            transform=ax.transAxes,
-            fontsize=8,
-            verticalalignment="top",
-            horizontalalignment="right",
-            bbox=dict(
-                boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor="none"
-            ),
-        )
+                self._plot_spectrum_only(total, save_path)
 
     def _plot_spectrum_only(
         self,
         total: np.ndarray,
         save_path: Optional[str],
-        commit: str,
-        timestamp: str,
     ) -> None:
-        """Plot only the total spectrum with nuclear data header."""
+        """Plot only the total spectrum."""
         fig, ax = plt.subplots(figsize=(10, 6))
 
         ax.plot(self.energies_MeV, total, "b-", lw=2, label="Normalized spectrum")
-        ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=11)
-        ax.set_ylabel("Normalized Counts", fontsize=11)
-        ax.set_title(
-            f"Beta-decay: {self.config.Z_parent} -> {self.config.Z_daughter}, A={self.config.A_number}",
-            fontsize=13,
+        ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=12)
+        ax.set_ylabel(
+            f"Normalized Counts / {self.config.e_step_MeV * 1000:.1f} keV", fontsize=12
+        )
+        fig.suptitle(
+            self._build_figure_title(fig), fontsize=14, fontweight="bold"
         )
         ax.set_yscale("log")
         ax.grid(True, alpha=0.3)
         ax.legend(loc="best", fontsize=10)
 
-        self._add_nuclear_data_header(ax)
-        self._add_id_textbox(ax, commit, timestamp)
+        self._build_figure_header(fig)
 
         plt.tight_layout()
 
@@ -269,33 +247,30 @@ class BetaSpectrumAnalyzer:
         total: np.ndarray,
         components: Dict[str, np.ndarray],
         save_path: Optional[str],
-        commit: str,
-        timestamp: str,
     ) -> None:
         """Full debug view with 4-panel spectrum analysis."""
         fig = plt.figure(figsize=(14, 10))
 
+        fig.suptitle(
+            self._build_figure_title(fig), fontsize=14, fontweight="bold"
+        )
+
+        e_step_keV = self.config.e_step_MeV * 1000
+
         # 1. Main spectrum plot (top-left)
         ax1 = plt.subplot(2, 2, 1)
-        ax1.plot(
-            self.energies_MeV, total, "b-", lw=2, label="Total spectrum (log scale)"
-        )
+        ax1.plot(self.energies_MeV, total, "b-", lw=2, label="Total spectrum")
         ax1.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=10)
         ax1.set_ylabel(
-            f"Normalized Counts per {self.config.e_step_MeV:.3e} MeV", fontsize=10
-        )
-        ax1.set_title(
-            f"Beta-decay: Z={self.config.Z_parent} -> {self.config.Z_daughter}, A={self.config.A_number}",
-            fontsize=12,
+            f"Normalized Counts / {e_step_keV:.1f} keV", fontsize=10
         )
         ax1.set_yscale("log")
         ax1.grid(True, alpha=0.3)
-        ax1.legend()
+        ax1.legend(fontsize=8)
 
         # 2. Correction plots (top-right)
         ax2 = plt.subplot(2, 2, 2)
 
-        # Set color order for correction plots
         component_order = [
             "PhaseSpace",
             "Fermi",
@@ -310,58 +285,44 @@ class BetaSpectrumAnalyzer:
         for name, color in zip(component_order, colors):
             if name in components:
                 values = components[name]
-
-                # For Fermi and PhaseSpace, scale for visibility
                 if name in ["Fermi", "PhaseSpace"]:
                     values = values / np.max(values)
-                    label = f"{name} (norm)"
+                    label = name
                 else:
                     label = name
-
                 ax2.plot(
-                    self.energies_MeV,
-                    values,
-                    color=color,
-                    lw=1.5,
-                    label=label,
-                    alpha=0.8,
+                    self.energies_MeV, values, color=color, lw=1.5,
+                    label=label, alpha=0.8,
                 )
 
         ax2.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
         ax2.set_ylabel("Correction factor", fontsize=10)
-        ax2.set_title("Spectrum components", fontsize=12)
+        ax2.set_title("Spectrum components", fontsize=11)
         ax2.grid(True, alpha=0.3)
         ax2.legend(loc="best", fontsize=8)
 
-        # 3. Cumulative effect (botom-left)
+        # 3. Cumulative effect (bottom-left)
         ax3 = plt.subplot(2, 2, 3)
 
-        # Cumulative product
         cumulative = np.ones_like(self.W)
-        baseline_norm = np.ones_like(cumulative)
 
-        # Plot baseline
         ax3.plot(
-            self.energies_MeV, baseline_norm, "k--", lw=1.5, label="Baseline", alpha=0.7
+            self.energies_MeV, np.ones_like(cumulative), "k--", lw=1.5,
+            label="Baseline", alpha=0.7,
         )
 
-        # Add components one by one
         for name, color in zip(component_order, colors):
             if name in components:
                 cumulative *= components[name]
                 norm_cumulative = cumulative / np.max(cumulative)
                 ax3.plot(
-                    self.energies_MeV,
-                    norm_cumulative,
-                    color=color,
-                    lw=1.5,
-                    label=f"+ {name}",
-                    alpha=0.7,
+                    self.energies_MeV, norm_cumulative, color=color, lw=1.5,
+                    label=f"+ {name}", alpha=0.7,
                 )
 
         ax3.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
         ax3.set_ylabel("Normalized spectrum", fontsize=10)
-        ax3.set_title("Cumulative effect", fontsize=12)
+        ax3.set_title("Cumulative effect", fontsize=11)
         ax3.grid(True, alpha=0.3)
         ax3.legend(loc="best", fontsize=8)
 
@@ -372,26 +333,19 @@ class BetaSpectrumAnalyzer:
             if name in components and name not in ["Fermi", "PhaseSpace"]:
                 deviation = components[name] - 1.0
                 ax4.plot(
-                    self.energies_MeV,
-                    deviation,
-                    color=color,
-                    lw=1.5,
-                    label=f"{name}",
-                    alpha=0.7,
+                    self.energies_MeV, deviation, color=color, lw=1.5,
+                    label=name, alpha=0.7,
                 )
 
         ax4.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
         ax4.set_ylabel("Deviation from unity", fontsize=10)
-        ax4.set_title("Correction deviations (C - 1)", fontsize=12)
+        ax4.set_title("Correction deviations (C - 1)", fontsize=11)
         ax4.grid(True, alpha=0.3)
         ax4.legend(loc="best", fontsize=8)
         ax4.axhline(y=0, color="k", linestyle="-", lw=0.5)
 
-        plt.suptitle(
-            f"Beta-decay spectrum {self.config.A_number}{self._element_symbol(self.config.Z_parent)} -> {self.config.A_number}{self._element_symbol(self.config.Z_daughter)}",
-            fontsize=14,
-            fontweight="bold",
-        )
+        self._build_figure_header(fig)
+
         plt.tight_layout()
 
         if save_path:
@@ -510,40 +464,21 @@ class BetaSpectrumAnalyzer:
     # Multi-branch plotting
     # ---------------------------------------------------------------------------
 
-    def _get_branch_label(self, i: int) -> str:
-        """Generate branch label for legend."""
-        if i >= len(self.spectrum.branches):
-            return f"Branch {i+1}"
-        branch = self.spectrum.branches[i]
-        return f"Branch {i+1}: {branch.transition_type}, E₀={branch.endpoint_MeV*1000:.1f} keV"
+
 
     def _plot_multi_branch_spectra(
         self,
         total: np.ndarray,
         components: Dict[str, np.ndarray],
         save_path: Optional[str],
-        commit: str,
-        timestamp: str,
     ) -> None:
-        """Plot total spectrum with individual branch decomposition.
-
-        All curves use raw (un-normalized) values so that the total is
-        the arithmetic sum of branch contributions, and branch amplitudes
-        are proportional to their intensities.
-        """
+        """Plot total spectrum with individual branch decomposition."""
         fig, ax = plt.subplots(figsize=(12, 7))
 
         branch_colors = [
-            "#1f77b4",
-            "#ff7f0e",
-            "#2ca02c",
-            "#d62728",
-            "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22",
-            "#17becf",
+            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+            "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+            "#bcbd22", "#17becf",
         ]
 
         # Compute branch contributions (universal * intensity * branch_spectrum)
@@ -551,11 +486,8 @@ class BetaSpectrumAnalyzer:
         for i, branch_spec in enumerate(self.spectrum.branch_spectra):
             universal_product = np.ones_like(self.W)
             for name in [
-                "Fermi",
-                "Screening",
-                "FiniteSizeL0",
-                "ChargeDistributionU",
-                "Exchange",
+                "Fermi", "Screening", "FiniteSizeL0",
+                "ChargeDistributionU", "Exchange",
             ]:
                 if name in components:
                     universal_product *= components[name]
@@ -563,46 +495,35 @@ class BetaSpectrumAnalyzer:
             contrib = universal_product * self.spectrum.branches[i].intensity * bs[i]
             branch_contribs.append(contrib)
 
-        # Total = arithmetic sum of all branches (raw, un-normalized)
         total_raw = sum(branch_contribs)
 
         ax.plot(
-            self.energies_MeV,
-            total_raw,
-            "k-",
-            lw=2.5,
-            label="Total spectrum",
-            zorder=10,
+            self.energies_MeV, total_raw, "k-", lw=2.5,
+            label="Total spectrum", zorder=10,
         )
 
-        # Plot each branch contribution (raw, un-normalized)
-        for i, (contrib, branch) in enumerate(
-            zip(branch_contribs, self.spectrum.branches)
-        ):
+        for i, contrib in enumerate(branch_contribs):
             color = branch_colors[i % len(branch_colors)]
             ax.plot(
-                self.energies_MeV,
-                contrib,
-                color=color,
-                lw=1.5,
-                alpha=0.7,
-                label=self._get_branch_label(i),
+                self.energies_MeV, contrib, color=color, lw=1.5,
+                alpha=0.7, label=self._format_branch_label(i),
             )
 
         ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=12)
-        ax.set_ylabel("Normalized Counts", fontsize=12)
-        parent = self._element_symbol(self.config.Z_parent)
-        daughter = self._element_symbol(self.config.Z_daughter)
-        ax.set_title(
-            f"Beta-decay: {parent}{self.config.A_number} -> {daughter}{self.config.A_number} — {len(self.spectrum.branches)} branches",
-            fontsize=14,
+        ax.set_ylabel(
+            f"Normalized Counts / {self.config.e_step_MeV * 1000:.1f} keV", fontsize=12
+        )
+        fig.suptitle(
+            self._build_figure_title(fig), fontsize=14, fontweight="bold"
         )
         ax.set_yscale("log")
         ax.grid(True, alpha=0.3)
-        ax.legend(loc="best", fontsize=10, ncol=min(2, len(self.spectrum.branches) + 1))
+        ax.legend(
+            loc="best", fontsize=9,
+            ncol=min(2, len(self.spectrum.branches) + 1),
+        )
 
-        self._add_nuclear_data_header(ax)
-        self._add_id_textbox(ax, commit, timestamp)
+        self._build_figure_header(fig)
 
         plt.tight_layout()
 
@@ -615,46 +536,29 @@ class BetaSpectrumAnalyzer:
         total: np.ndarray,
         components: Dict[str, np.ndarray],
         save_path: Optional[str],
-        commit: str,
-        timestamp: str,
     ) -> None:
-        """Debug view for multi-branch: vertical layout with 4 panels.
-
-        Panel 1: Total spectrum + intensity-scaled branch spectra (log scale)
-        Panel 2: Fermi function + all phase spaces (shape comparison, no intensity)
-        Panel 3: Universal W0-independent corrections (Fermi, Screening, etc.)
-        Panel 4: W0-dependent corrections (Radiative for each branch)
-        """
+        """Debug view for multi-branch: vertical layout with 4 panels."""
         n_branches = len(self.spectrum.branches)
+        e_step_keV = self.config.e_step_MeV * 1000
 
         fig, axes = plt.subplots(4, 1, figsize=(12, 16), sharex=True)
+        fig.suptitle(
+            self._build_figure_title(fig), fontsize=14, fontweight="bold"
+        )
 
         branch_colors = [
-            "#1f77b4",
-            "#ff7f0e",
-            "#2ca02c",
-            "#d62728",
-            "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22",
-            "#17becf",
+            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
+            "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+            "#bcbd22", "#17becf",
         ]
-        parent = self._element_symbol(self.config.Z_parent)
-        daughter = self._element_symbol(self.config.Z_daughter)
 
         # Panel 1: Total spectrum + per-branch spectra
-        # All curves use raw (un-normalized) values so total = sum of branches
         branch_contribs = []
         for i, branch_spec in enumerate(self.spectrum.branch_spectra):
             universal_product = np.ones_like(self.W)
             for name in [
-                "Fermi",
-                "Screening",
-                "FiniteSizeL0",
-                "ChargeDistributionU",
-                "Exchange",
+                "Fermi", "Screening", "FiniteSizeL0",
+                "ChargeDistributionU", "Exchange",
             ]:
                 if name in components:
                     universal_product *= components[name]
@@ -666,59 +570,36 @@ class BetaSpectrumAnalyzer:
 
         ax = axes[0]
         ax.plot(
-            self.energies_MeV,
-            total_raw,
-            "k-",
-            lw=2,
-            label="Total spectrum",
-            zorder=10,
+            self.energies_MeV, total_raw, "k-", lw=2,
+            label="Total spectrum", zorder=10,
         )
-
-        for i, (contrib, branch) in enumerate(
-            zip(branch_contribs, self.spectrum.branches)
-        ):
+        for i, contrib in enumerate(branch_contribs):
             color = branch_colors[i % len(branch_colors)]
             ax.plot(
-                self.energies_MeV,
-                contrib,
-                color=color,
-                lw=1.5,
-                alpha=0.7,
-                label=f"Branch {i+1}: {branch.transition_type}, "
-                f"E₀={branch.endpoint_MeV*1000:.1f} keV",
+                self.energies_MeV, contrib, color=color, lw=1.5,
+                alpha=0.7, label=self._format_branch_label(i),
             )
         ax.set_yscale("log")
-        ax.set_ylabel("Normalized Counts", fontsize=10)
-        ax.set_title(
-            f"Multi-branch: {parent}{self.config.A_number} -> {daughter}{self.config.A_number} ({n_branches} branches)",
-            fontsize=12,
-            fontweight="bold",
+        ax.set_ylabel(
+            f"Normalized Counts / {e_step_keV:.1f} keV", fontsize=10
         )
+        ax.set_title("Spectrum", fontsize=11)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, loc="best", ncol=min(2, n_branches + 1))
 
-        # Panel 2: Fermi function + all phase spaces (shape comparison)
-        # Phase space is masked beyond endpoint before normalizing to avoid
-        # negative values from the sqrt term
+        # Panel 2: Fermi function + all phase spaces
         ax = axes[1]
         if "Fermi" in components:
             fermi_vals = components["Fermi"]
             fermi_scaled = fermi_vals / np.max(fermi_vals)
             ax.plot(
-                self.energies_MeV,
-                fermi_scaled,
-                "r-",
-                lw=1.5,
-                label="Fermi (normalized)",
-                alpha=0.8,
+                self.energies_MeV, fermi_scaled, "r-", lw=1.5,
+                label="Fermi", alpha=0.8,
             )
-        for i, (branch_spec, branch) in enumerate(
-            zip(self.spectrum.branch_spectra, self.spectrum.branches)
-        ):
+        for i, branch in enumerate(self.spectrum.branches):
             color = branch_colors[i % len(branch_colors)]
             if f"branch_{i}.PhaseSpace" in components:
                 ps_vals = components[f"branch_{i}.PhaseSpace"]
-                # Mask beyond endpoint to avoid negative values
                 W0_branch = T_to_W(branch.endpoint_MeV)
                 mask = self.W <= W0_branch
                 ps_masked = np.where(mask, ps_vals, 0.0)
@@ -728,27 +609,19 @@ class BetaSpectrumAnalyzer:
                 else:
                     ps_scaled = ps_masked
                 ax.plot(
-                    self.energies_MeV,
-                    ps_scaled,
-                    color=color,
-                    lw=1.5,
-                    alpha=0.7,
-                    label=f"PS Branch {i+1} (normalized)",
+                    self.energies_MeV, ps_scaled, color=color, lw=1.5,
+                    alpha=0.7, label=f"PS Br. {i+1}",
                 )
         ax.set_ylabel("Normalized Factor", fontsize=10)
-        ax.set_title(
-            "Fermi Function & Phase Space Shapes", fontsize=11, fontweight="bold"
-        )
+        ax.set_title("Fermi & Phase Space", fontsize=11)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, loc="best")
 
         # Panel 3: Universal W0-independent corrections
         ax = axes[2]
         universal_components = [
-            "Screening",
-            "FiniteSizeL0",
-            "ChargeDistributionU",
-            "Exchange",
+            "Screening", "FiniteSizeL0",
+            "ChargeDistributionU", "Exchange",
         ]
         colors = ["green", "orange", "purple", "brown"]
         for name, color in zip(universal_components, colors):
@@ -756,45 +629,31 @@ class BetaSpectrumAnalyzer:
                 values = components[name]
                 values_scaled = values / np.max(values)
                 ax.plot(
-                    self.energies_MeV,
-                    values_scaled,
-                    color=color,
-                    lw=1.5,
-                    label=f"{name} (normalized)",
-                    alpha=0.8,
+                    self.energies_MeV, values_scaled, color=color, lw=1.5,
+                    label=name, alpha=0.8,
                 )
         ax.set_ylabel("Normalized Factor", fontsize=10)
-        ax.set_title(
-            "Universal W0-Independent Corrections", fontsize=11, fontweight="bold"
-        )
+        ax.set_title("Universal Corrections", fontsize=11)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, loc="best")
 
         # Panel 4: W0-dependent corrections (Radiative for each branch)
         ax = axes[3]
-        for i, (branch_spec, branch) in enumerate(
-            zip(self.spectrum.branch_spectra, self.spectrum.branches)
-        ):
+        for i, branch in enumerate(self.spectrum.branches):
             color = branch_colors[i % len(branch_colors)]
             if f"branch_{i}.Radiative" in components:
                 rad_vals = components[f"branch_{i}.Radiative"]
                 ax.plot(
-                    self.energies_MeV,
-                    rad_vals,
-                    color=color,
-                    lw=1.5,
-                    alpha=0.7,
-                    label=f"Branch {i+1} Radiative (E₀={branch.endpoint_MeV*1000:.1f} keV)",
+                    self.energies_MeV, rad_vals, color=color, lw=1.5,
+                    alpha=0.7, label=f"Br. {i+1}",
                 )
         ax.set_ylabel("Radiative Correction", fontsize=10)
         ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=10)
-        ax.set_title(
-            "W0-Dependent Corrections (Radiative)", fontsize=11, fontweight="bold"
-        )
+        ax.set_title("Radiative Corrections", fontsize=11)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=8, loc="best", ncol=min(2, n_branches + 1))
 
-        self._add_id_textbox(axes[3], commit, timestamp)
+        self._build_figure_header(fig)
 
         plt.tight_layout()
 
