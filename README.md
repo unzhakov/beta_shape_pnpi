@@ -151,4 +151,5 @@ For a complete list of implemented and planned features, see [TODO.md](TODO.md).
 - **Detector response**: Gaussian, Gaussian+tail, Tikhonov models with tabulated support
 - **Multi-branch decay**: intensity-weighted sum of branch spectra, per-branch calculators with branch-specific endpoint, transition type (from ENSDF), and `--intensity-cutoff` CLI filter
 - **Analysis tools**: χ² fitter, C(W) extraction pipeline, Kurie plot analysis
-- **CLI**: `bs_pnpi` with paceENSDF integration, structured logging, CSV metadata headers, branch info in dry-run and CSV output
+- **CLI**: `bs_pnpi --nuclide Tc99` — full paceENSDF integration (auto-lookup of Z, A, Q-value, transition type, half-life, branches, forbiddenness from ENSDF)
+- **paceENSDF integration**: `get_decay_info_from_paceENSDF()`, `create_config_from_source("paceENSDF", nuclide="Tc99")`, `_parse_nuclide_symbol()` for Z=1..98, FORBIDDENNESS_MAP, `--nuclide` CLI flag

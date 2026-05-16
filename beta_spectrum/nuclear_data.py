@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from beta_spectrum.spectrum import SpectrumConfig
+from beta_spectrum.spectrum import BranchConfig, SpectrumConfig
 
 # Mapping from paceENSDF forbiddenness codes to our transition_type
 FORBIDDENNESS_MAP: Dict[str, str] = {
@@ -470,6 +470,7 @@ def decay_info_to_config(
     info: DecayInfo,
     e_step_MeV: float = 0.001,
     use_detector_response: bool = False,
+    intensity_cutoff: float = 0.0,
 ) -> SpectrumConfig:
     """
     Convert DecayInfo to a SpectrumConfig.
@@ -482,12 +483,29 @@ def decay_info_to_config(
         Energy step size in MeV.
     use_detector_response : bool
         Whether to enable detector response convolution.
+    intensity_cutoff : float
+        Minimum branch intensity fraction to include.
 
     Returns
     -------
     SpectrumConfig
         Configuration ready for BetaSpectrum.from_config().
     """
+    # Convert BranchInfo -> BranchConfig for SpectrumConfig
+    branches: Optional[List[BranchConfig]] = None
+    if info.branches:
+        branches = [
+            BranchConfig(
+                endpoint_MeV=info.endpoint_MeV - b.level_energy_keV / 1000.0,
+                transition_type=b.transition_type,
+                intensity=b.intensity,
+            )
+            for b in info.branches
+            if b.intensity >= intensity_cutoff
+        ]
+        if not branches:
+            branches = None
+
     return SpectrumConfig(
         Z_parent=info.Z_parent,
         Z_daughter=info.Z_daughter,
@@ -496,6 +514,8 @@ def decay_info_to_config(
         transition_type=info.transition_type,
         e_step_MeV=e_step_MeV,
         use_detector_response=use_detector_response,
+        branches=branches,
+        intensity_cutoff=intensity_cutoff,
     )
 
 

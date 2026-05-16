@@ -82,10 +82,17 @@ ______________________________________________________________________
 
 ### B1. Nuclear Data Integration
 
-- [ ] Add usage of `paceENSDF` package to retrieve nuclear data for decays
-  - Q-values, half-lives, branch intensities, decay schemes
-  - Automated setup of W0, Z, A parameters from ENSDF
-  - Support for multiple isotopes without manual input
+- [x] ~~paceENSDF integration for automated nuclear data retrieval~~
+  - ~~`get_decay_info_from_paceENSDF(nuclide, decay_type)` — retrieves Q-value, half-life, spin/parity, branches, forbiddenness from ENSDF~~
+  - ~~`decay_info_to_config()` — converts DecayInfo to SpectrumConfig with branch support~~
+  - ~~`create_config_from_source("paceENSDF", nuclide="Tc99")` — one-liner config creation~~
+  - ~~`_parse_nuclide_symbol()` — parses "Tc99" → (Tc, 43, 99) with full Z lookup for Z=1..98~~
+  - ~~`_resolve_decay_index()` — finds correct decay index (ground state by default)~~
+  - ~~`_get_decay_mode_symbol()` — maps beta_minus→BM, beta_plus/ec→ECBP~~
+  - ~~FORBIDDENNESS_MAP — translates paceENSDF codes (0A, 1F, 2F, …) to transition_type~~
+  - ~~CLI `--nuclide Tc99` uses paceENSDF automatically~~
+  - ~~Branch intensities, log_ft, level energies, transition types all populated from ENSDF~~
+  - ~~Tested with Tc99 (2 branches, F2) and Co60 (multi-branch)~~
 
 ### B2. Input Flexibility
 
@@ -218,9 +225,11 @@ ______________________________________________________________________
 
 ## Current Status
 
-**Version:** 0.3.1\
-**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. Multi-branch decay support with per-branch calculators and intensity-weighted sum. CLI interface (`bs_pnpi`) with paceENSDF integration, structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers with branch info. JSON input with full detector param support. Comprehensive test suite (226 tests). Notebook quality control with nbmake and auto-save plot hooks.
+**Version:** 0.3.1\n
+**Implemented:** Phase space, Fermi function, finite size, screening, exchange, radiative corrections (with delta_cut resummation). Detector response module with analytical models (Gaussian, Gaussian+tail, Tikhonov), convolution API, declarative config integration. χ² curve fitting framework (CurveFitter) with confidence intervals, profile likelihood, and correlation analysis. C(W) shape factor extraction pipeline (CWExtractor) with Kurie plot analysis, parametrized fitting, and g_V/g_A extraction. Multi-branch decay support with per-branch calculators and intensity-weighted sum. CLI interface (`bs_pnpi`) with paceENSDF integration (`--nuclide`), structured logging (-v/-vv/-q), --dry-run, --version, --log-file. CSV metadata headers with branch info. JSON input with full detector param support. paceENSDF integration: `get_decay_info_from_paceENSDF()` returns DecayInfo with Z, A, endpoint, transition type (from forbiddenness), half-life, spin/parity, and full branch list; `decay_info_to_config()` converts to SpectrumConfig with branches; `create_config_from_source("paceENSDF", nuclide="Tc99")` one-liner; `_parse_nuclide_symbol()` for Z=1..98; FORBIDDENNESS_MAP; CLI `--nuclide` uses it automatically. Comprehensive test suite (262 tests, including 6 paceENSDF integration tests). Notebook quality control with nbmake and auto-save plot hooks.
 
-**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B2 — input flexibility (JSON input, ENSDF auto-population). B3 — multi-branch decay support (BranchConfig, per-branch calculators, intensity weighting, branch-aware CSV export and plotting, per-branch transition types from ENSDF, `--intensity-cutoff` CLI option, raw-value plotting where total = sum of branches). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
+**Completed:** A2 — detector response function and convolution routines. A4 — fitter routine and C(W) extraction pipeline. B1 — paceENSDF integration (full nuclear data retrieval: Q-value, half-life, spin/parity, branches, forbiddenness, log_ft; CLI `--nuclide` auto-lookup). B2 — input flexibility (JSON input, ENSDF auto-population). B3 — multi-branch decay support (BranchConfig, per-branch calculators, intensity weighting, branch-aware CSV export and plotting, per-branch transition types from ENSDF, `--intensity-cutoff` CLI option, raw-value plotting where total = sum of branches). B8 — CLI & output improvements (logging, CSV headers, dry-run, version). B8.2 — CLI refinement: removed --mode, --transition-type, --decay-index flags; clarified units (MeV everywhere); enhanced logging (INFO shows components, DEBUG shows internals); CSV headers use element notation (Tc99 -> Ru99). B8.3 — debug verification framework: `./output/` directory for artifacts, development workflow step 4.5 with `-vv` parameter consistency checks across all components. B8.4 — plot output with ID tracking (commit hash + UTC timestamp) and two display modes (normal spectrum plot with nuclear data header; debug 4-panel view with all corrections).
+
+**Bug fix (v0.3.1):** Fixed `decay_info_to_config()` to pass branches to `SpectrumConfig` (was dropping them, causing `create_config_from_source("paceENSDF")` to return single-branch config). Added `BranchConfig` import to `nuclear_data.py`.
 
 **Next immediate step:** A3 — data processing pipeline for experimental spectra (background subtraction, energy calibration, dead-time correction, pulse pile-up correction).
