@@ -130,11 +130,8 @@ class TestCSVMetadataHeader:
     """Test CSV export metadata header."""
 
     def test_header_contains_version(self):
-        from beta_spectrum.spectrum import (
-            BetaSpectrum,
-            BetaSpectrumAnalyzer,
-            SpectrumConfig,
-        )
+        from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
+        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -161,11 +158,8 @@ class TestCSVMetadataHeader:
         os.unlink(filename)
 
     def test_header_contains_timestamp(self):
-        from beta_spectrum.spectrum import (
-            BetaSpectrum,
-            BetaSpectrumAnalyzer,
-            SpectrumConfig,
-        )
+        from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
+        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -191,11 +185,8 @@ class TestCSVMetadataHeader:
         os.unlink(filename)
 
     def test_header_contains_nuclide_info(self):
-        from beta_spectrum.spectrum import (
-            BetaSpectrum,
-            BetaSpectrumAnalyzer,
-            SpectrumConfig,
-        )
+        from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
+        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -222,11 +213,8 @@ class TestCSVMetadataHeader:
         os.unlink(filename)
 
     def test_header_contains_git_commit(self):
-        from beta_spectrum.spectrum import (
-            BetaSpectrum,
-            BetaSpectrumAnalyzer,
-            SpectrumConfig,
-        )
+        from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
+        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
@@ -252,11 +240,8 @@ class TestCSVMetadataHeader:
         os.unlink(filename)
 
     def test_header_contains_corrections(self):
-        from beta_spectrum.spectrum import (
-            BetaSpectrum,
-            BetaSpectrumAnalyzer,
-            SpectrumConfig,
-        )
+        from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
+        from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
         config = SpectrumConfig(
             Z_parent=43,
