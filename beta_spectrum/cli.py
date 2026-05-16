@@ -196,10 +196,10 @@ def _run(args: argparse.Namespace) -> None:
     )
     from beta_spectrum.spectrum import (
         BetaSpectrum,
-        BetaSpectrumAnalyzer,
         BranchConfig,
         SpectrumConfig,
     )
+    from beta_spectrum.analyzer import BetaSpectrumAnalyzer
 
     # Determine logging level
     if args.quiet:
