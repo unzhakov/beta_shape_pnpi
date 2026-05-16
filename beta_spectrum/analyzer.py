@@ -2,6 +2,8 @@
 Analyzer module — BetaSpectrumAnalyzer class.
 
 Introspection, analysis, and debugging tools for BetaSpectrum.
+All nuclides (single- and multi-branch) are treated uniformly as one or more
+branches — single-branch is just a special case with one branch.
 """
 
 from __future__ import annotations
@@ -9,6 +11,7 @@ from __future__ import annotations
 import logging
 import pandas as pd
 from datetime import datetime, timezone
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
@@ -55,10 +58,33 @@ class BetaSpectrumAnalyzer:
         self._logger = logger
         self._is_multi = spectrum._is_multi
 
+        # Unified branch view: single-branch treated as one-branch multi-branch
+        if not self._is_multi and self.spectrum.branch_spectra == []:
+            self._unified_branches: List[_UnifiedBranch] = [
+                _UnifiedBranch(
+                    endpoint_MeV=config.endpoint_MeV,
+                    transition_type=config.transition_type,
+                    intensity=1.0,
+                )
+            ]
+        else:
+            self._unified_branches = [
+                _UnifiedBranch(
+                    endpoint_MeV=b.endpoint_MeV,
+                    transition_type=b.transition_type,
+                    intensity=b.intensity,
+                )
+                for b in self.spectrum.branches
+            ]
+
     @property
     def components(self) -> Dict[str, np.ndarray]:
         if self._components_cache is None:
-            self._components_cache = self.spectrum.calculate_components(self.W)
+            raw = self.spectrum.calculate_components(self.W)
+            # Normalize keys: single-branch has bare names,
+            # multi-branch has branch_0., branch_1., etc.
+            # We keep the raw keys for export_to_csv compatibility.
+            self._components_cache = raw
         assert self._components_cache is not None
         return self._components_cache
 
@@ -73,9 +99,7 @@ class BetaSpectrumAnalyzer:
         return self._branch_spectra_cache
 
     def total_spectrum(self, normalize: bool = True) -> np.ndarray:
-        """
-        Calculate the total_spectrum
-        """
+        """Calculate the total spectrum."""
         total = self.spectrum(self.W)
 
         if normalize:
@@ -127,6 +151,42 @@ class BetaSpectrumAnalyzer:
 
         return convolved
 
+    # ---------------------------------------------------------------------------
+    # Unified branch view
+    # ---------------------------------------------------------------------------
+
+    @property
+    def _n_branches(self) -> int:
+        """Number of branches (unified view)."""
+        return len(self._unified_branches)
+
+    def _get_branch_spectrum(self, i: int) -> np.ndarray:
+        """Get the spectrum array for branch i."""
+        if i < len(self.spectrum.branch_spectra):
+            return self.spectrum.branch_spectra[i]
+        # Single-branch: the spectrum itself is the only branch
+        return self.spectrum(self.W)
+
+    def _get_component_key(self, i: int, name: str) -> str:
+        """Get the canonical key for a per-branch component."""
+        if self._is_multi:
+            return f"branch_{i}.{name}"
+        return name
+
+    def _has_component(self, i: int, name: str) -> bool:
+        """Check if branch i has a given component."""
+        key = self._get_component_key(i, name)
+        return key in self.components
+
+    def _get_component(self, i: int, name: str) -> np.ndarray:
+        """Get a per-branch component array."""
+        key = self._get_component_key(i, name)
+        return self.components[key]
+
+    # ---------------------------------------------------------------------------
+    # Plotting helpers
+    # ---------------------------------------------------------------------------
+
     def _build_figure_header(self, fig: "Figure") -> None:
         """Add a compact header with nuclide info, e_step, commit and timestamp outside axes."""
         parent = self._element_symbol(self.config.Z_parent)
@@ -153,23 +213,25 @@ class BetaSpectrumAnalyzer:
         )
 
     def _build_figure_title(self, fig: "Figure") -> str:
-        """Build a unified figure title and return the figure for suptitle."""
+        """Build a unified figure title."""
         parent = self._element_symbol(self.config.Z_parent)
         daughter = self._element_symbol(self.config.Z_daughter)
         n = self.config.A_number
         title = f"Beta-decay: {n}{parent} -> {n}{daughter}"
-        if self._is_multi and self.spectrum.branches:
-            title += f" ({len(self.spectrum.branches)} branches)"
+        if self._n_branches > 1:
+            title += f" ({self._n_branches} branches)"
         return title
 
     def _format_branch_label(self, i: int) -> str:
         """Abbreviated branch label for legend."""
-        if i >= len(self.spectrum.branches):
-            return f"Br. {i+1}"
-        branch = self.spectrum.branches[i]
+        branch = self._unified_branches[i]
         e0 = branch.endpoint_MeV * 1000
         intensity_pct = branch.intensity * 100
         return f"Br. {i+1}: {e0:.1f} keV ({intensity_pct:.1f}%)"
+
+    # ---------------------------------------------------------------------------
+    # Plotting — unified multi-branch approach
+    # ---------------------------------------------------------------------------
 
     def plot_analysis(
         self,
@@ -179,294 +241,24 @@ class BetaSpectrumAnalyzer:
         """
         Create visualization of the spectrum and all correction factors.
 
-        In single-branch mode: standard 4-panel debug view or single spectrum plot.
-        In multi-branch mode: spectrum plot with individual branches shown,
-        and debug view with vertical layout for branch comparison.
-
         Parameters
         ----------
         save_path : str, optional
             Path to save the figure.
         show_components : bool
             If True, show full debug view.
-            If False, show only the spectrum plot with nuclear data header.
-            If True, use logarithmic y-scale. Set to False for
-            linear scale, which is better when branch intensities are similar.
+            If False, show only the spectrum plot.
         """
         total = self.total_spectrum(normalize=True)
         components = self.components
         self._timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-        if self._is_multi:
-            if show_components:
-                self._plot_multi_branch_debug(
-                    total, components, save_path
-                )
-            else:
-                self._plot_multi_branch_spectra(
-                    total, components, save_path
-                )
+        if show_components:
+            self._plot_debug_view(total, components, save_path)
         else:
-            if show_components:
-                self._plot_debug_view(total, components, save_path)
-            else:
-                self._plot_spectrum_only(total, save_path)
+            self._plot_spectra_view(total, components, save_path)
 
-    def _plot_spectrum_only(
-        self,
-        total: np.ndarray,
-        save_path: Optional[str],
-    ) -> None:
-        """Plot only the total spectrum."""
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        ax.plot(self.energies_MeV, total, "b-", lw=2, label="Normalized spectrum")
-        ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=12)
-        ax.set_ylabel(
-            f"Normalized Counts / {self.config.e_step_MeV * 1000:.1f} keV", fontsize=12
-        )
-        fig.suptitle(
-            self._build_figure_title(fig), fontsize=14, fontweight="bold"
-        )
-        ax.set_yscale("log")
-        ax.grid(True, alpha=0.3)
-        ax.legend(loc="best", fontsize=10)
-
-        self._build_figure_header(fig)
-
-        plt.tight_layout()
-
-        if save_path:
-            fig.savefig(save_path, dpi=150, bbox_inches="tight")
-            print(f"Figure saved to {save_path}")
-
-        plt.show()
-
-    def _plot_debug_view(
-        self,
-        total: np.ndarray,
-        components: Dict[str, np.ndarray],
-        save_path: Optional[str],
-    ) -> None:
-        """Full debug view with 4-panel spectrum analysis."""
-        fig = plt.figure(figsize=(14, 10))
-
-        fig.suptitle(
-            self._build_figure_title(fig), fontsize=14, fontweight="bold"
-        )
-
-        e_step_keV = self.config.e_step_MeV * 1000
-
-        # 1. Main spectrum plot (top-left)
-        ax1 = plt.subplot(2, 2, 1)
-        ax1.plot(self.energies_MeV, total, "b-", lw=2, label="Total spectrum")
-        ax1.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=10)
-        ax1.set_ylabel(
-            f"Normalized Counts / {e_step_keV:.1f} keV", fontsize=10
-        )
-        ax1.set_yscale("log")
-        ax1.grid(True, alpha=0.3)
-        ax1.legend(fontsize=8)
-
-        # 2. Correction plots (top-right)
-        ax2 = plt.subplot(2, 2, 2)
-
-        component_order = [
-            "PhaseSpace",
-            "Fermi",
-            "Screening",
-            "Exchange",
-            "FiniteSizeL0",
-            "ChargeDistributionU",
-            "Radiative",
-        ]
-        colors = ["gray", "red", "green", "blue", "orange", "purple", "brown"]
-
-        for name, color in zip(component_order, colors):
-            if name in components:
-                values = components[name]
-                if name in ["Fermi", "PhaseSpace"]:
-                    values = values / np.max(values)
-                    label = name
-                else:
-                    label = name
-                ax2.plot(
-                    self.energies_MeV, values, color=color, lw=1.5,
-                    label=label, alpha=0.8,
-                )
-
-        ax2.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
-        ax2.set_ylabel("Correction factor", fontsize=10)
-        ax2.set_title("Spectrum components", fontsize=11)
-        ax2.grid(True, alpha=0.3)
-        ax2.legend(loc="best", fontsize=8)
-
-        # 3. Cumulative effect (bottom-left)
-        ax3 = plt.subplot(2, 2, 3)
-
-        cumulative = np.ones_like(self.W)
-
-        ax3.plot(
-            self.energies_MeV, np.ones_like(cumulative), "k--", lw=1.5,
-            label="Baseline", alpha=0.7,
-        )
-
-        for name, color in zip(component_order, colors):
-            if name in components:
-                cumulative *= components[name]
-                norm_cumulative = cumulative / np.max(cumulative)
-                ax3.plot(
-                    self.energies_MeV, norm_cumulative, color=color, lw=1.5,
-                    label=f"+ {name}", alpha=0.7,
-                )
-
-        ax3.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
-        ax3.set_ylabel("Normalized spectrum", fontsize=10)
-        ax3.set_title("Cumulative effect", fontsize=11)
-        ax3.grid(True, alpha=0.3)
-        ax3.legend(loc="best", fontsize=8)
-
-        # 4. Deviation from unity (bottom-right)
-        ax4 = plt.subplot(2, 2, 4)
-
-        for name, color in zip(component_order, colors):
-            if name in components and name not in ["Fermi", "PhaseSpace"]:
-                deviation = components[name] - 1.0
-                ax4.plot(
-                    self.energies_MeV, deviation, color=color, lw=1.5,
-                    label=name, alpha=0.7,
-                )
-
-        ax4.set_xlabel("Electron kinetic energy E [MeV]", fontsize=10)
-        ax4.set_ylabel("Deviation from unity", fontsize=10)
-        ax4.set_title("Correction deviations (C - 1)", fontsize=11)
-        ax4.grid(True, alpha=0.3)
-        ax4.legend(loc="best", fontsize=8)
-        ax4.axhline(y=0, color="k", linestyle="-", lw=0.5)
-
-        self._build_figure_header(fig)
-
-        plt.tight_layout()
-
-        if save_path:
-            fig.savefig(save_path, dpi=150, bbox_inches="tight")
-            print(f"Figure saved to {save_path}")
-
-        plt.show()
-
-    def _element_symbol(self, Z: int) -> str:
-        symbols = [
-            "",
-            "H",
-            "He",
-            "Li",
-            "Be",
-            "B",
-            "C",
-            "N",
-            "O",
-            "F",
-            "Ne",
-            "Na",
-            "Mg",
-            "Al",
-            "Si",
-            "P",
-            "S",
-            "Cl",
-            "Ar",
-            "K",
-            "Ca",
-            "Sc",
-            "Ti",
-            "V",
-            "Cr",
-            "Mn",
-            "Fe",
-            "Co",
-            "Ni",
-            "Cu",
-            "Zn",
-            "Ga",
-            "Ge",
-            "As",
-            "Se",
-            "Br",
-            "Kr",
-            "Rb",
-            "Sr",
-            "Y",
-            "Zr",
-            "Nb",
-            "Mo",
-            "Tc",
-            "Ru",
-            "Rh",
-            "Pd",
-            "Ag",
-            "Cd",
-            "In",
-            "Sn",
-            "Sb",
-            "Te",
-            "I",
-            "Xe",
-            "Cs",
-            "Ba",
-            "La",
-            "Ce",
-            "Pr",
-            "Nd",
-            "Pm",
-            "Sm",
-            "Eu",
-            "Gd",
-            "Tb",
-            "Dy",
-            "Ho",
-            "Er",
-            "Tm",
-            "Yb",
-            "Lu",
-            "Hf",
-            "Ta",
-            "W",
-            "Re",
-            "Os",
-            "Ir",
-            "Pt",
-            "Au",
-            "Hg",
-            "Tl",
-            "Pb",
-            "Bi",
-            "Po",
-            "At",
-            "Rn",
-            "Fr",
-            "Ra",
-            "Ac",
-            "Th",
-            "Pa",
-            "U",
-            "Np",
-            "Pu",
-            "Am",
-            "Cm",
-            "Bk",
-            "Cf",
-            "Es",
-            "Fm",
-        ]
-        return symbols[Z] if Z < len(symbols) else f"Z{Z}"
-
-    # ---------------------------------------------------------------------------
-    # Multi-branch plotting
-    # ---------------------------------------------------------------------------
-
-
-
-    def _plot_multi_branch_spectra(
+    def _plot_spectra_view(
         self,
         total: np.ndarray,
         components: Dict[str, np.ndarray],
@@ -481,18 +273,21 @@ class BetaSpectrumAnalyzer:
             "#bcbd22", "#17becf",
         ]
 
+        e_step_keV = self.config.e_step_MeV * 1000
+
         # Compute branch contributions (universal * intensity * branch_spectrum)
         branch_contribs = []
-        for i, branch_spec in enumerate(self.spectrum.branch_spectra):
+        for i in range(self._n_branches):
             universal_product = np.ones_like(self.W)
             for name in [
                 "Fermi", "Screening", "FiniteSizeL0",
                 "ChargeDistributionU", "Exchange",
             ]:
-                if name in components:
-                    universal_product *= components[name]
-            bs = self.spectrum.get_branch_spectra(self.W)
-            contrib = universal_product * self.spectrum.branches[i].intensity * bs[i]
+                key = self._get_component_key(i, name)
+                if key in components:
+                    universal_product *= components[key]
+            bs = self._get_branch_spectrum(i)
+            contrib = universal_product * self._unified_branches[i].intensity * bs
             branch_contribs.append(contrib)
 
         total_raw = sum(branch_contribs)
@@ -511,7 +306,7 @@ class BetaSpectrumAnalyzer:
 
         ax.set_xlabel(r"Electron kinetic energy $E$ [MeV]", fontsize=12)
         ax.set_ylabel(
-            f"Normalized Counts / {self.config.e_step_MeV * 1000:.1f} keV", fontsize=12
+            f"Normalized Counts / {e_step_keV:.1f} keV", fontsize=12
         )
         fig.suptitle(
             self._build_figure_title(fig), fontsize=14, fontweight="bold"
@@ -520,7 +315,7 @@ class BetaSpectrumAnalyzer:
         ax.grid(True, alpha=0.3)
         ax.legend(
             loc="best", fontsize=9,
-            ncol=min(2, len(self.spectrum.branches) + 1),
+            ncol=min(2, self._n_branches + 1),
         )
 
         self._build_figure_header(fig)
@@ -531,14 +326,14 @@ class BetaSpectrumAnalyzer:
             fig.savefig(save_path, dpi=150, bbox_inches="tight")
             print(f"Figure saved to {save_path}")
 
-    def _plot_multi_branch_debug(
+    def _plot_debug_view(
         self,
         total: np.ndarray,
         components: Dict[str, np.ndarray],
         save_path: Optional[str],
     ) -> None:
-        """Debug view for multi-branch: vertical layout with 4 panels."""
-        n_branches = len(self.spectrum.branches)
+        """Debug view: vertical layout with 4 panels."""
+        n_branches = self._n_branches
         e_step_keV = self.config.e_step_MeV * 1000
 
         fig, axes = plt.subplots(4, 1, figsize=(12, 16), sharex=True)
@@ -554,16 +349,17 @@ class BetaSpectrumAnalyzer:
 
         # Panel 1: Total spectrum + per-branch spectra
         branch_contribs = []
-        for i, branch_spec in enumerate(self.spectrum.branch_spectra):
+        for i in range(n_branches):
             universal_product = np.ones_like(self.W)
             for name in [
                 "Fermi", "Screening", "FiniteSizeL0",
                 "ChargeDistributionU", "Exchange",
             ]:
-                if name in components:
-                    universal_product *= components[name]
-            bs = self.spectrum.get_branch_spectra(self.W)
-            contrib = universal_product * self.spectrum.branches[i].intensity * bs[i]
+                key = self._get_component_key(i, name)
+                if key in components:
+                    universal_product *= components[key]
+            bs = self._get_branch_spectrum(i)
+            contrib = universal_product * self._unified_branches[i].intensity * bs
             branch_contribs.append(contrib)
 
         total_raw = sum(branch_contribs)
@@ -596,10 +392,12 @@ class BetaSpectrumAnalyzer:
                 self.energies_MeV, fermi_scaled, "r-", lw=1.5,
                 label="Fermi", alpha=0.8,
             )
-        for i, branch in enumerate(self.spectrum.branches):
+        for i in range(n_branches):
             color = branch_colors[i % len(branch_colors)]
-            if f"branch_{i}.PhaseSpace" in components:
-                ps_vals = components[f"branch_{i}.PhaseSpace"]
+            branch = self._unified_branches[i]
+            key = self._get_component_key(i, "PhaseSpace")
+            if key in components:
+                ps_vals = components[key]
                 W0_branch = T_to_W(branch.endpoint_MeV)
                 mask = self.W <= W0_branch
                 ps_masked = np.where(mask, ps_vals, 0.0)
@@ -639,10 +437,11 @@ class BetaSpectrumAnalyzer:
 
         # Panel 4: W0-dependent corrections (Radiative for each branch)
         ax = axes[3]
-        for i, branch in enumerate(self.spectrum.branches):
+        for i in range(n_branches):
             color = branch_colors[i % len(branch_colors)]
-            if f"branch_{i}.Radiative" in components:
-                rad_vals = components[f"branch_{i}.Radiative"]
+            key = self._get_component_key(i, "Radiative")
+            if key in components:
+                rad_vals = components[key]
                 ax.plot(
                     self.energies_MeV, rad_vals, color=color, lw=1.5,
                     alpha=0.7, label=f"Br. {i+1}",
@@ -661,21 +460,31 @@ class BetaSpectrumAnalyzer:
             fig.savefig(save_path, dpi=150, bbox_inches="tight")
             print(f"Figure saved to {save_path}")
 
-    def export_to_csv(self, filename: str, source_type: str = "unknown") -> None:
-        """
-        Export spectrum data to CSV with metadata header.
+    def _element_symbol(self, Z: int) -> str:
+        """Return chemical symbol for atomic number Z."""
+        symbols = [
+            "", "H", "He", "Li", "Be", "B", "C", "N", "O", "F",
+            "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K",
+            "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu",
+            "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",
+            "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In",
+            "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr",
+            "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm",
+            "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au",
+            "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac",
+            "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es",
+        ]
+        return symbols[Z] if Z < len(symbols) else f"Z{Z}"
 
-        Parameters
-        ----------
-        filename : str
-            Output CSV file path.
-        source_type : str
-            Data source type (paceENSDF, json, cli) for the header.
-        """
+    # ---------------------------------------------------------------------------
+    # Export
+    # ---------------------------------------------------------------------------
+
+    def export_to_csv(self, filename: str, source_type: str = "unknown") -> None:
+        """Export spectrum data to CSV with metadata header."""
         total = self.total_spectrum(normalize=True)
         components = self.components
 
-        # Build enabled corrections list
         enabled = []
         if self.config.use_phase_space:
             enabled.append("phase_space")
@@ -692,115 +501,8 @@ class BetaSpectrumAnalyzer:
         if self.config.use_exchange:
             enabled.append("exchange")
 
-        # Build metadata header
-        def _element_symbol(Z: int) -> str:
-            symbols = [
-                "",
-                "H",
-                "He",
-                "Li",
-                "Be",
-                "B",
-                "C",
-                "N",
-                "O",
-                "F",
-                "Ne",
-                "Na",
-                "Mg",
-                "Al",
-                "Si",
-                "P",
-                "S",
-                "Cl",
-                "Ar",
-                "K",
-                "Ca",
-                "Sc",
-                "Ti",
-                "V",
-                "Cr",
-                "Mn",
-                "Fe",
-                "Co",
-                "Ni",
-                "Cu",
-                "Zn",
-                "Ga",
-                "Ge",
-                "As",
-                "Se",
-                "Br",
-                "Kr",
-                "Rb",
-                "Sr",
-                "Y",
-                "Zr",
-                "Nb",
-                "Mo",
-                "Tc",
-                "Ru",
-                "Rh",
-                "Pd",
-                "Ag",
-                "Cd",
-                "In",
-                "Sn",
-                "Sb",
-                "Te",
-                "I",
-                "Xe",
-                "Cs",
-                "Ba",
-                "La",
-                "Ce",
-                "Pr",
-                "Nd",
-                "Pm",
-                "Sm",
-                "Eu",
-                "Gd",
-                "Tb",
-                "Dy",
-                "Ho",
-                "Er",
-                "Tm",
-                "Yb",
-                "Lu",
-                "Hf",
-                "Ta",
-                "W",
-                "Re",
-                "Os",
-                "Ir",
-                "Pt",
-                "Au",
-                "Hg",
-                "Tl",
-                "Pb",
-                "Bi",
-                "Po",
-                "At",
-                "Rn",
-                "Fr",
-                "Ra",
-                "Ac",
-                "Th",
-                "Pa",
-                "U",
-                "Np",
-                "Pu",
-                "Am",
-                "Cm",
-                "Bk",
-                "Cf",
-                "Es",
-                "Fm",
-            ]
-            return symbols[Z] if Z < len(symbols) else f"Z{Z}"
-
-        parent_symbol = _element_symbol(self.config.Z_parent)
-        daughter_symbol = _element_symbol(self.config.Z_daughter)
+        parent_symbol = self._element_symbol(self.config.Z_parent)
+        daughter_symbol = self._element_symbol(self.config.Z_daughter)
 
         header_lines = [
             f"# beta-spectrum v{__import__('beta_spectrum').__version__}",
@@ -813,16 +515,13 @@ class BetaSpectrumAnalyzer:
             f"# e_step: {self.config.e_step_MeV:.4f} MeV",
         ]
 
-        if self._is_multi and self.spectrum.branches:
-            header_lines.append(f"# branches: {len(self.spectrum.branches)}")
-            for i, branch in enumerate(self.spectrum.branches):
-                header_lines.append(
-                    f"#   branch_{i+1}: E₀={branch.endpoint_MeV*1000:.1f} keV, "
-                    f"transition={branch.transition_type}, "
-                    f"intensity={branch.intensity:.4f}"
-                )
-        else:
-            header_lines.append("# branches: 1 (single)")
+        # Branch info — unified view
+        for i, branch in enumerate(self._unified_branches):
+            header_lines.append(
+                f"#   branch_{i+1}: E₀={branch.endpoint_MeV*1000:.1f} keV, "
+                f"transition={branch.transition_type}, "
+                f"intensity={branch.intensity:.4f}"
+            )
 
         if self.config.use_detector_response:
             header_lines.append(
@@ -835,45 +534,34 @@ class BetaSpectrumAnalyzer:
 
         header_lines.append(f"# git_commit: {get_git_short_hash()}")
 
-        # Write CSV with header
         data: Dict[str, np.ndarray] = {
             "energy_MeV": self.energies_MeV,
             "spectrum": total,
         }
 
-        if self._is_multi and self.spectrum.branches:
-            # Multi-branch mode: total spectrum + per-branch spectra + components
-            # (branch info — intensity, endpoint, transition — is in the header, not repeated columns)
-            for i, branch_spec in enumerate(self.spectrum.branch_spectra):
-                data[f"branch_{i+1}_spectrum"] = branch_spec(self.W)
+        # Per-branch spectra and components
+        for i in range(self._n_branches):
+            data[f"branch_{i+1}_spectrum"] = self._get_branch_spectrum(i)
+            for comp_name in ["PhaseSpace", "Radiative"]:
+                key = self._get_component_key(i, comp_name)
+                if key in components:
+                    data[f"branch_{i+1}_{comp_name}"] = components[key]
 
-            # Per-branch components (PhaseSpace, Radiative, etc.)
-            for i, branch_spec in enumerate(self.spectrum.branch_spectra):
-                branch_comps = branch_spec.calculate_components(self.W)
-                for comp_name, values in branch_comps.items():
-                    data[f"branch_{i+1}_{comp_name}"] = values
-
-            # Universal components (same for all branches — no prefix needed)
-            for name, values in components.items():
-                if not name.startswith("branch_"):
-                    data[name] = values
-        else:
-            # Single-branch mode: standard export
-            for name, values in components.items():
+        # Universal components (no prefix)
+        for name, values in components.items():
+            if not name.startswith("branch_"):
                 data[name] = values
 
         df = pd.DataFrame(data)
         df.to_csv(filename, index=False, float_format="%.4e")
 
-        # Prepend header
         with open(filename, "r") as f:
             content = f.read()
         with open(filename, "w") as f:
             f.write("\n".join(header_lines) + "\n" + content)
 
         if self._logger:
-            mode = "multi-branch" if self._is_multi else "single-branch"
-            self._logger.info("CSV exported to %s (%s mode)", filename, mode)
+            self._logger.info("CSV exported to %s", filename)
 
     def get_data(self) -> Dict[str, Any]:
         """Get all numerical data for custom analysis."""
@@ -884,3 +572,11 @@ class BetaSpectrumAnalyzer:
             "components": self.components,
             "config": self.config,
         }
+
+
+@dataclass
+class _UnifiedBranch:
+    """Unified branch view for both single- and multi-branch modes."""
+    endpoint_MeV: float
+    transition_type: str
+    intensity: float
