@@ -30,10 +30,10 @@ import pytest
 
 from beta_spectrum import (
     BetaSpectrum,
-    BetaSpectrumAnalyzer,
     BranchConfig,
     SpectrumConfig,
 )
+from beta_spectrum.visualize import BetaSpectrumAnalyzer
 from beta_spectrum.utils import T_to_W
 
 # ---------------------------------------------------------------------------

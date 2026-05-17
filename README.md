@@ -45,16 +45,15 @@ beta_shape_pnpi/
 │   ├── 10-nuclear-structure.md        # Shape factor C(Z,W), BB vs HS formalisms
 │   ├── 12-atomic-overlap.md           # Bahcall correction r(Z,W)
 │   ├── 13-chemical-effects.md         # Molecular environment effects
-├── beta_spectrum/
+├── beta_spectrum/           ← pure theory core
 │   ├── __init__.py          # Public API: constants, utilities, classes
 │   ├── base.py              # Abstract SpectrumComponent base class
 │   ├── constants.py         # Physical constants (natural units, m_e = 1)
 │   ├── utils.py             # Helpers: T<->W conversion, momentum, nuclear radius
-│   ├── spectrum.py          # BetaSpectrum + BetaSpectrumAnalyzer classes
+│   ├── spectrum.py          # BetaSpectrum + SpectrumConfig + BranchConfig
 │   ├── nuclear_data.py      # paceENSDF integration + JSON input support
 │   ├── cli.py               # Command-line interface (bs_pnpi)
-│   ├── fitter.py            # χ² curve fitting for C(W) extraction
-│   ├── cw_extractor.py      # C(W) shape factor extraction + gV/gA analysis
+│   ├── logging_utils.py     # Structured logging helpers
 │   └── components/
 │       │   ├── phase_space.py           ✓ Phase space shape (p·W·(W₀−W)²)
 │       │   ├── fermi.py                 ✓ Coulomb correction (loggamma for stability)
@@ -63,18 +62,27 @@ beta_shape_pnpi/
 │       │   ├── exchange.py              ✓ Hayen-2018 empirical fit coefficients
 │       │   ├── radiative.py             ✓ Outer radiative corrections, soft-photon resummation
 │       │   └── detector_response.py     ✓ Analytical detector response models
+├── beta_spectrum/visualize/ ← plotting / visualization
+│   └── __init__.py          # BetaSpectrumAnalyzer
+├── exp_data/                ← experimental data handling
+│   ├── __init__.py          # ExpSpectrum, EnergyCalibrator, GaussianFitter, etc.
+│   ├── spectrum.py          # ExpSpectrum dataclass (energies, counts, errors, metadata)
+│   ├── calibration.py       # EnergyCalibrator (linear/quadratic channel→energy)
+│   ├── fitters.py           # GaussianFitter + PeakFitter for cal sources
+│   └── corrections.py       # DeadTimeCorrection, PileUpCorrection, BackgroundSubtractor
+├── fitter/                  ← analysis framework
+│   ├── __init__.py          # SpectrumModel, SpectrumFitter, CWExtractor, etc.
+│   ├── model.py             # SpectrumModel (BetaSpectrum + DetectorResponse wrapper)
+│   ├── fit_engine.py        # SpectrumFitter + CurveFitter + FitConfig + FitResult
+│   ├── extractor.py         # CWExtractor, GVAExtractor, CWExtractionResult, GVAExtractionResult
+│   └── result.py            # AnalysisResult + FitSummary
 ├── tests/
-│   ├── test_radiative.py        # Radiative correction tests (24 tests)
-│   ├── test_exchange.py         # Exchange correction tests
-│   ├── test_fermi.py            # Fermi function tests
-│   ├── test_finite_size.py      # Finite size correction tests
-│   ├── test_phase_space.py      # Phase space tests
-│   ├── test_screening.py        # Screening correction tests
-│   ├── test_spectrum.py         # Integration tests
-│   ├── test_detector_response.py# Detector response tests
-│   ├── test_fitter.py           # Curve fitter tests
-│   ├── test_cw_extractor.py     # C(W) extraction tests
-│   └── test_nuclear_data.py     # paceENSDF + JSON input tests (23 tests)
+│   ├── exp_data/            # exp_data module tests
+│   ├── fitter/              # fitter module tests
+│   ├── physics/             # Physics component tests
+│   ├── quality/             # Code quality tests (logging, API, nuclear data)
+│   ├── integration/         # Full pipeline integration tests
+│   └── common/              # Shared hypothesis + property tests
 ├── data/
 │   ├── exchange_coeff.csv         # Tabulated coefficients for X(Z,W), Z=2..120
 │   └── custom_input_example.json  # Sample JSON input file
@@ -109,7 +117,7 @@ Defined in `beta_spectrum/spectrum.py`. Orchestrates the calculation:
 
 ### `BetaSpectrumAnalyzer`
 
-Also in `spectrum.py`. Provides debugging and visualization tools:
+In `beta_spectrum.visualize`. Provides debugging and visualization tools:
 
 - `total_spectrum(normalize=True/False)` — computed spectrum array
 - `plot_analysis(save_path=None, show_components=True)` — plot with two modes:
@@ -124,7 +132,8 @@ ______________________________________________________________________
 ## Quick Start
 
 ```python
-from beta_spectrum import SpectrumConfig, BetaSpectrum, BetaSpectrumAnalyzer
+from beta_spectrum import SpectrumConfig, BetaSpectrum
+from beta_spectrum.visualize import BetaSpectrumAnalyzer
 
 config = SpectrumConfig(
     Z_parent=90,       # Thorium-232 (example)
@@ -144,6 +153,27 @@ analyzer.plot_analysis("debug.png", show_components=True)  # Debug mode (4-panel
 analyzer.export_to_csv("spectrum.csv")   # Export data to CSV
 ```
 
+### Fitting and C(W) extraction
+
+```python
+from beta_spectrum import SpectrumConfig, BetaSpectrum
+from fitter import SpectrumModel, SpectrumFitter, CWExtractor
+from exp_data.spectrum import ExpSpectrum
+
+# Build theoretical model
+spectrum = BetaSpectrum.from_config(config)
+model = SpectrumModel(spectrum, detector_response=detector)
+
+# Fit to experimental data
+exp = ExpSpectrum(energies=energies_keV, counts=counts, errors=errors)
+fitter = SpectrumFitter(model, exp.energies, exp.counts, exp.errors)
+result = fitter.fit(x0=[1.0, 0.0])
+
+# Extract C(W) shape factor
+extractor = CWExtractor(config)
+cw_result = extractor.extract(measured, errors, energies_keV, model_values, endpoint_keV=Q)
+```
+
 ______________________________________________________________________
 
 ## Implementation Status
@@ -153,6 +183,7 @@ For a complete list of implemented and planned features, see [TODO.md](TODO.md).
 - **Physics corrections**: phase space, Fermi function, finite size, screening, exchange, radiative (with delta_cut resummation)
 - **Detector response**: Gaussian, Gaussian+tail, Tikhonov models with tabulated support
 - **Multi-branch decay**: intensity-weighted sum of branch spectra, per-branch calculators with branch-specific endpoint, transition type (from ENSDF), and `--intensity-cutoff` CLI filter
-- **Analysis tools**: χ² fitter, C(W) extraction pipeline, Kurie plot analysis
+- **Analysis tools**: χ² fitter (SpectrumFitter + CurveFitter), C(W) extraction pipeline, Kurie plot analysis, g_V/g_A extraction
+- **Experimental data**: ExpSpectrum container, energy calibration, peak fitting, dead-time/pile-up correction
 - **CLI**: `bs_pnpi --nuclide Tc99` — full paceENSDF integration (auto-lookup of Z, A, Q-value, transition type, half-life, branches, forbiddenness from ENSDF)
 - **paceENSDF integration**: `get_decay_info_from_paceENSDF()`, `create_config_from_source("paceENSDF", nuclide="Tc99")`, `_parse_nuclide_symbol()` for Z=1..98, FORBIDDENNESS_MAP, `--nuclide` CLI flag
