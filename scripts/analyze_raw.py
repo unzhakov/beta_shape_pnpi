@@ -29,11 +29,12 @@ from exp_data.raw_reader import (
 )
 
 # Energy calibration from Am-241 source: E = offset + gain * channel
-# Determined automatically from known Am-241 gamma lines
+# Determined automatically from known Am-241 gamma lines (13.8, 17.8, 26.3 keV)
 CALIBRATION_FILE = "data/raw/CAM1.DAT"
 _calib_offset, _calib_gain = calibrate_from_am241(CALIBRATION_FILE)
 ENERGY_OFFSET = _calib_offset
 ENERGY_GAIN = _calib_gain
+print(f"Energy calibration: E = {ENERGY_OFFSET:.4f} + {ENERGY_GAIN:.4f} * ch")
 
 # Approximate Tc-99 endpoint for reference
 TC99_ENDPOINT = 294.0  # keV
@@ -56,13 +57,13 @@ def estimate_endpoint_from_counts(
     We use a simplified Kurie plot (sqrt(counts)) since the phase space
     factor is slowly varying compared to the sharp drop at the endpoint.
 
-    Fits a line to the last ~10% of the spectrum (in the tail region
+    Fits a line to the last ~15% of the spectrum (in the tail region
     where counts are small but above background) and finds the x-intercept.
 
     Parameters
     ----------
     counts : np.ndarray
-        Count spectrum (channel indices, not energies).
+        Count spectrum.
     energies_keV : np.ndarray
         Energy calibration for each channel.
     guess_endpoint : float
@@ -77,17 +78,18 @@ def estimate_endpoint_from_counts(
     counts_work = counts[:-1]
     energies_work = energies_keV[:-1]
 
-    # Estimate background from the very tail (last 3%)
-    n_tail = max(10, int(len(counts_work) * 0.03))
+    # Estimate background from the very tail (last 5%)
+    n_tail = max(20, int(len(counts_work) * 0.05))
     background = np.median(counts_work[-n_tail:])
 
-    # Select tail region: last 10% of spectrum, above background
-    n_tail_region = max(20, int(len(counts_work) * 0.10))
+    # Select tail region: last 15% of spectrum, above background
+    n_tail_region = max(30, int(len(counts_work) * 0.15))
     E_tail = energies_work[-n_tail_region:]
     c_tail = counts_work[-n_tail_region:]
 
     # Only keep channels above background + noise
-    mask = c_tail > (background + np.sqrt(background))
+    noise = max(np.sqrt(background), 1.0)
+    mask = c_tail > (background + noise)
     if not mask.any():
         return guess_endpoint
 
@@ -99,11 +101,11 @@ def estimate_endpoint_from_counts(
 
     # Linear fit: K = a + b * E, endpoint = -a/b
     try:
-        slope, intercept, _, _ = linregress(E_sel, K)[:4]
-        if slope < 0:
+        slope, intercept, r_val, _, _ = linregress(E_sel, K)[:5]
+        if slope < 0 and abs(r_val) > 0.3:
             endpoint = -intercept / slope
-            # Clamp to reasonable range
-            endpoint = max(guess_endpoint - 30, min(guess_endpoint + 80, endpoint))
+            # Clamp to reasonable range (Q ± 100 keV)
+            endpoint = max(guess_endpoint - 100, min(guess_endpoint + 100, endpoint))
             return float(endpoint)
     except (ValueError, ZeroDivisionError):
         pass

@@ -142,8 +142,8 @@ def calibrate_from_am241(
 ) -> tuple[float, float]:
     """Calibrate energy scale using Am-241 calibration source.
 
-    Reads the Am-241 spectrum, finds prominent peaks, matches them
-    to known gamma lines, and fits a linear energy calibration.
+    Matches known Am-241 gamma lines to detected peaks in the
+    low-energy region (ch < 300) and fits a linear calibration.
 
     Parameters
     ----------
@@ -151,7 +151,7 @@ def calibrate_from_am241(
         Path to the Am-241 binary file (CAM1.DAT or CAM2.DAT).
     known_peaks
         Mapping of energy_keV -> expected channel. If None, auto-detects
-        Am-241 peaks at 13.8, 17.8, 26.3, 59.54 keV.
+        Am-241 peaks at 13.8, 17.8, 26.3 keV.
     n_channels
         Number of channels.
 
@@ -165,27 +165,24 @@ def calibrate_from_am241(
         f.read(128)  # skip header
         counts = np.array(struct.unpack(f"{n_channels}i", f.read(n_channels * 4)), dtype=np.int64)
 
-    # Exclude endpoint region (last 200 channels)
-    counts_no_end = counts.copy()
-    counts_no_end[-200:] = 0
-
-    peaks, props = find_peaks(counts_no_end, height=10, distance=10)
-    peak_energies = np.array(peaks)
+    # Search for peaks in low-energy region only
+    counts_low = counts.copy()
+    counts_low[300:] = 0
+    peaks, props = find_peaks(counts_low, height=10, distance=10)
+    peak_energies = np.array(peaks, dtype=float)
     peak_heights = props["peak_heights"]
 
     # Known Am-241 gamma lines (keV)
-    am241_lines = {13.8: None, 17.8: None, 26.3: None, 59.54: None}
+    am241_lines = {13.8: None, 17.8: None, 26.3: None}
     if known_peaks:
         am241_lines = known_peaks
     else:
-        # Find peaks near expected channels
-        for E, ch in list(am241_lines.items()):
-            if ch is None:
-                # Find the nearest peak
-                best = peak_energies[np.argmin(np.abs(peak_energies - E / 0.45))]  # rough guess
-                am241_lines[E] = int(round(best))
+        # Match lines to peaks by proximity
+        for E in am241_lines:
+            best = peak_energies[np.argmin(np.abs(peak_energies - E / 0.1))]
+            am241_lines[E] = int(round(best))
 
-    # Use all identified peaks for calibration
+    # Use all matched peaks for calibration
     energies = np.array(list(am241_lines.keys()))
     channels = np.array(list(am241_lines.values()))
 
