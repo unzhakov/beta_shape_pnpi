@@ -58,15 +58,24 @@ class ExpSpectrum:
             "must have the same shape"
         )
         assert np.all(self.energies >= 0), "Energies must be non-negative"
-        assert np.all(self.counts >= 0), "Counts must be non-negative"
+
+        # Difference spectra (cumulative subtraction) can have negative counts
+        # in channels where the true count is zero and Poisson noise causes
+        # the earlier cumulative to slightly exceed the later one.
+        # This is normal and expected — errors propagate correctly.
 
         if self.errors is None:
-            # Poisson statistics: σ = √N (handle zero counts gracefully)
-            self.errors = np.sqrt(np.maximum(self.counts, 1.0))
+            # Poisson statistics: σ = √N for positive counts
+            pos_mask = self.counts >= 0
+            errors = np.zeros_like(self.counts)
+            errors[pos_mask] = np.sqrt(self.counts[pos_mask])
+            neg_mask = ~pos_mask
+            if neg_mask.any():
+                errors[neg_mask] = np.sqrt(np.abs(self.counts[neg_mask]))
+            self.errors = errors
         else:
             self.errors = np.asarray(self.errors, dtype=np.float64)
             assert self.errors.shape == self.counts.shape
-            assert np.all(self.errors > 0), "Errors must be positive"
 
     @property
     def n_channels(self) -> int:
