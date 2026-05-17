@@ -616,7 +616,7 @@ def load_json_input(filepath: str) -> Dict[str, Any]:
             data[key] = default
 
     validate_json_input(data)
-    return data  # type: ignore[no-any-return]
+    return data
 
 
 # Fix the return type issue by explicitly typing the function

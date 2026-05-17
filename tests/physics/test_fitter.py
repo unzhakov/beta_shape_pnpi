@@ -18,7 +18,7 @@ We test:
 
 import numpy as np
 
-from beta_spectrum import CurveFitter, FitConfig
+from fitter.fit_engine import CurveFitter, FitConfig
 
 
 class TestBasicFitting:

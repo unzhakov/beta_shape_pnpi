@@ -163,7 +163,14 @@ class BetaSpectrumAnalyzer:
     def _get_branch_spectrum(self, i: int) -> np.ndarray:
         """Get the spectrum array for branch i."""
         if i < len(self.spectrum.branch_spectra):
-            return self.spectrum.branch_spectra[i]
+            bs_obj = self.spectrum.branch_spectra[i]
+            # branch_spectra stores BetaSpectrum objects — call them to get arrays
+            if hasattr(bs_obj, "__call__"):
+                val = bs_obj(self.W)
+                # Clamp to zero beyond endpoint (phase space goes negative)
+                W0 = T_to_W(self._unified_branches[i].endpoint_MeV)
+                return np.where(self.W <= W0, val, 0.0)
+            return np.asarray(bs_obj)
         # Single-branch: the spectrum itself is the only branch
         return self.spectrum(self.W)
 
@@ -276,15 +283,19 @@ class BetaSpectrumAnalyzer:
 
         # Compute branch contributions (universal * intensity * branch_spectrum)
         branch_contribs = []
+        # Universal components are shared (no per-branch key prefix)
+        universal_names = [
+            "Fermi", "Screening", "FiniteSizeL0",
+            "ChargeDistributionU", "Exchange",
+        ]
         for i in range(self._n_branches):
             universal_product = np.ones_like(self.W)
-            for name in [
-                "Fermi", "Screening", "FiniteSizeL0",
-                "ChargeDistributionU", "Exchange",
-            ]:
+            for name in universal_names:
                 key = self._get_component_key(i, name)
                 if key in components:
                     universal_product *= components[key]
+                elif name in components:  # fallback: universal components
+                    universal_product *= components[name]
             bs = self._get_branch_spectrum(i)
             contrib = universal_product * self._unified_branches[i].intensity * bs
             branch_contribs.append(contrib)
@@ -348,15 +359,18 @@ class BetaSpectrumAnalyzer:
 
         # Panel 1: Total spectrum + per-branch spectra
         branch_contribs = []
+        universal_names = [
+            "Fermi", "Screening", "FiniteSizeL0",
+            "ChargeDistributionU", "Exchange",
+        ]
         for i in range(n_branches):
             universal_product = np.ones_like(self.W)
-            for name in [
-                "Fermi", "Screening", "FiniteSizeL0",
-                "ChargeDistributionU", "Exchange",
-            ]:
+            for name in universal_names:
                 key = self._get_component_key(i, name)
                 if key in components:
                     universal_product *= components[key]
+                elif name in components:
+                    universal_product *= components[name]
             bs = self._get_branch_spectrum(i)
             contrib = universal_product * self._unified_branches[i].intensity * bs
             branch_contribs.append(contrib)
