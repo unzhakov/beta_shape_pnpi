@@ -88,13 +88,13 @@ visualize/                  ← visualization / plotting
 - [x] Remove old `test_cw_extractor.py` (replaced by `tests/fitter/test_extractor.py`)
 - [x] 322 tests pass, ruff + mypy clean on all 26 source files
 
-#### Phase 4: Update package structure
-- [ ] Update `pyproject.toml` — add `exp_data` and `fitter` as subpackages
-- [ ] Update `__init__.py` at root level if needed
-- [ ] Move CLI entry point to a separate package or keep as `beta_spectrum.cli` with re-exports
-- [ ] Update all imports across tests
-- [ ] Run full test suite
-- [ ] Update documentation
+#### Phase 4: Update package structure ✅ COMPLETE
+- [x] `pyproject.toml` auto-discovers all 4 packages via `setuptools.packages.find`
+- [x] `beta_spectrum.cli` keeps CLI entry point (no re-exports needed)
+- [x] All imports updated across 26 source files
+- [x] 322 tests pass
+- [x] README updated with new architecture diagram and Quick Start examples
+- [x] Version bumped to 0.4.0
 
 ______________________________________________________________________
 
@@ -329,17 +329,22 @@ ______________________________________________________________________
 - Notebook quality control with nbmake and auto-save plot hooks
 - Plot output: unified multi-branch approach, externalized headers, compact legends, consistent titles
 
-### In Progress (v0.4.0)
+### Completed (v0.4.0)
 - **Track B: Package restructuring** — separating into `beta_spectrum` (theory), `exp_data` (experimental data), `fitter` (analysis framework)
   - [x] Phase 1: Create `exp_data` module (raw_data.py, calibration.py, fitters.py, corrections.py, spectrum.py) — 43 tests
   - [x] Phase 2: Create `fitter` module (model.py, fit_engine.py, extractor.py, result.py) — 34 tests
   - [x] Phase 3: Clean up `beta_spectrum` (remove cw_extractor.py, fitter.py, __init__.py cleanup) — 322 tests
   - [x] Phase 4: Package auto-discovered by setuptools, all imports updated, black formatting applied
-- **v0.4.0 is READY FOR FINAL VERIFICATION**
-  - 322 tests pass (262 original + 43 exp_data + 34 fitter + 27 CW/gVA)
+- **v0.4.0 is COMPLETE**
+  - 322 tests pass (262 original + 60 new)
   - ruff + mypy clean on all 26 source files
   - black formatting applied to all new code
   - `pyproject.toml` auto-discovers all 4 packages: `beta_spectrum`, `beta_spectrum.visualize`, `exp_data`, `fitter`
+  - README updated with new architecture diagram and Quick Start examples
+  - Version bumped to 0.4.0
 
 ### Next Immediate Step
-- **v0.4.0 Phase 4:** Update package structure, verify all imports, run full test suite, update docs
+- **Track A: ⁹⁹Tc spectrum-shape analysis** — start real data processing pipeline
+  - Data processing pipeline for experimental runs
+  - Endpoint fitting and energy calibration
+  - Systematic uncertainty analysis

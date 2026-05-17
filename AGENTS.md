@@ -25,6 +25,7 @@ Install: `source ~/.pyenv/sci/bin/activate && pip install -e ".[dev]"`
 - **Commit each logical change** — don't wait for green. Use `git add -p`.
 - **Rebase over merge** for linear history: `git rebase main` before merge.
 - Delete branch locally + remotely after merge.
+- **Update project metadata on significant changes:** When a commit changes the package structure, adds/removes modules, or bumps the version, also update `TODO.md` and `README.md` to reflect the new state. This keeps documentation in sync with code.
 
 ## TDD
 
