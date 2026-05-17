@@ -177,3 +177,4 @@ coverage.xml
 htmlcov/
 .cache/
 .obsidian/
+data/raw/
