@@ -11,9 +11,6 @@ Usage examples:
     # Full analysis with plotting
     bs_pnpi --nuclide Co60 --plot analysis.png --output spectrum.csv
 
-    # With detector response
-    bs_pnpi --nuclide Tc99 --detector gaussian --output convolved.csv
-
     # Verbose with log file
     bs_pnpi --nuclide Tc99 --output spectrum.csv -vv --log-file /tmp/calc.log
 
@@ -25,7 +22,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, Dict
 
 from beta_spectrum.logging_utils import LoggingConfig, setup_logging
 from beta_spectrum.spectrum import SpectrumConfig
@@ -95,39 +91,6 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Save analysis plot to the specified path.",
     )
 
-    # Detector response
-    detector_group = parser.add_argument_group("detector response")
-    detector_group.add_argument(
-        "--detector",
-        type=str,
-        default=None,
-        metavar="MODEL",
-        help="Enable detector response convolution. "
-        "Specify model: 'gaussian', 'gaussian_tail', 'tikhonov', 'tabulated'. "
-        "All detector parameters are in keV.",
-    )
-    detector_group.add_argument(
-        "--sigma",
-        type=float,
-        default=1.0,
-        metavar="KEV",
-        help="Resolution parameter sigma in keV (default: 1.0). Energy-dependent part: sigma(E) = sigma_a + sigma_b * sqrt(E).",
-    )
-    detector_group.add_argument(
-        "--tau",
-        type=float,
-        default=5.0,
-        metavar="KEV",
-        help="Low-energy tail decay constant tau in keV (default: 5.0). Only used with 'gaussian_tail' model.",
-    )
-    detector_group.add_argument(
-        "--tail-fraction",
-        type=float,
-        default=0.0,
-        metavar="FRAC",
-        help="Low-energy tail fraction (0.0–1.0, default: 0.0). Only used with 'gaussian_tail' model.",
-    )
-
     # Logging and output control
     log_group = parser.add_argument_group("logging and output")
     log_group.add_argument(
@@ -167,20 +130,6 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     return parser
-
-
-def _parse_detector_args(args: argparse.Namespace) -> Dict[str, Any]:
-    """Parse detector-related arguments into a config dict."""
-    if not args.detector:
-        return {}
-
-    return {
-        "use_detector_response": True,
-        "detector_model": args.detector,
-        "detector_sigma_a_keV": args.sigma,
-        "detector_tau_keV": args.tau,
-        "detector_tail_fraction": args.tail_fraction,
-    }
 
 
 def _run(args: argparse.Namespace) -> None:
@@ -223,8 +172,6 @@ def _run(args: argparse.Namespace) -> None:
     logger.debug("Verbosity: %s | Log file: %s", log_level, args.log_file or "none")
 
     # Build config
-    detector_kwargs = _parse_detector_args(args)
-
     source_type: str
     config: SpectrumConfig
     if args.nuclide:
@@ -257,49 +204,18 @@ def _run(args: argparse.Namespace) -> None:
                     e_step_MeV=args.e_step,
                     branches=branches,
                     intensity_cutoff=args.intensity_cutoff,
-                    use_detector_response=detector_kwargs.get(
-                        "use_detector_response", False
-                    ),
-                    detector_model=detector_kwargs.get("detector_model", "gaussian"),
-                    detector_sigma_a_keV=detector_kwargs.get(
-                        "detector_sigma_a_keV", 1.0
-                    ),
-                    detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
-                    detector_tail_fraction=detector_kwargs.get(
-                        "detector_tail_fraction", 0.0
-                    ),
                 )
             else:
                 config = create_config_from_source(
                     "paceENSDF",
                     nuclide=args.nuclide,
                     e_step_MeV=args.e_step,
-                    use_detector_response=detector_kwargs.get(
-                        "use_detector_response", False
-                    ),
-                    detector_model=detector_kwargs.get("detector_model", "gaussian"),
-                    detector_sigma_a_keV=detector_kwargs.get(
-                        "detector_sigma_a_keV", 1.0
-                    ),
-                    detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
-                    detector_tail_fraction=detector_kwargs.get(
-                        "detector_tail_fraction", 0.0
-                    ),
                 )
         else:
             config = create_config_from_source(
                 "paceENSDF",
                 nuclide=args.nuclide,
                 e_step_MeV=args.e_step,
-                use_detector_response=detector_kwargs.get(
-                    "use_detector_response", False
-                ),
-                detector_model=detector_kwargs.get("detector_model", "gaussian"),
-                detector_sigma_a_keV=detector_kwargs.get("detector_sigma_a_keV", 1.0),
-                detector_tau_keV=detector_kwargs.get("detector_tau_keV", 5.0),
-                detector_tail_fraction=detector_kwargs.get(
-                    "detector_tail_fraction", 0.0
-                ),
             )
         source_type = "paceENSDF"
     elif args.input:

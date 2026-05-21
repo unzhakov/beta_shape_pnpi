@@ -13,9 +13,11 @@ Supports:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
+from scipy.signal import find_peaks
 
 
 @dataclass
@@ -183,7 +185,9 @@ class EnergyCalibrator:
             cov = np.eye(order + 1) * 1e-10
 
         # Compute χ²
-        y_fit = np.polyval(coeffs[::-1], x)
+        # np.polyfit returns descending-order coefficients [a_n, ..., a_0],
+        # which is exactly what np.polyval expects.
+        y_fit = np.polyval(coeffs, x)
         # Assume uniform uncertainty of 0.1 keV for calibration points
         uncertainties = np.full_like(x, 0.1)
         chi2 = float(np.sum(((y - y_fit) / uncertainties) ** 2))
@@ -289,3 +293,107 @@ class EnergyCalibrator:
             ]
         )
         return self.apply_calibration(order=1)
+
+    @classmethod
+    def from_am241_spectrum(
+        cls,
+        filepath: str | Path,
+        known_energies: Optional[list[float]] = None,
+        n_channels: int = 4096,
+    ) -> CalibrationResult:
+        """Create a CalibrationResult from an Am-241 calibration spectrum.
+
+        Auto-detects peaks using scipy.signal.find_peaks(), matches to known Am-241
+        lines, fits linear calibration, and returns a CalibrationResult suitable
+        for ExpSpectrum.apply_calibration().
+
+        Parameters
+        ----------
+        filepath : str or Path
+            Path to the Am-241 binary calibration file (CAM1.DAT or CAM2.DAT).
+        known_energies : list of float, optional
+            Known Am-241 line energies in keV. Defaults to [13.8, 17.8, 26.3].
+        n_channels : int
+            Number of channels (default 4096).
+
+        Returns
+        -------
+        CalibrationResult
+            Linear calibration fit with coefficients, chi2_per_dof, and covariance.
+
+        Raises
+        ------
+        ValueError
+            If fewer than 2 peaks are matched.
+        """
+        import struct
+
+        filepath = Path(filepath)
+
+        # Read raw binary
+        with open(filepath, "rb") as f:
+            f.read(128)  # skip header
+            counts = np.array(
+                struct.unpack(f"{n_channels}i", f.read(n_channels * 4)), dtype=np.int64
+            )
+
+        # Search for peaks in low-energy region
+        counts_low = counts.copy()
+        counts_low[300:] = 0
+        peaks, _ = find_peaks(counts_low, height=10, distance=10)
+        peak_energies = np.array(peaks, dtype=float)
+
+        # Known Am-241 gamma lines
+        if known_energies is None:
+            known_energies = [13.8, 17.8, 26.3]
+
+        # Match peaks to known energies.
+        # Am-241 has well-known lines: 13.8, 17.8, 26.3 keV (and 59.54 keV).
+        # Strategy: find the two closest peaks with the largest energy gap,
+        # assign the known energies to them proportionally, then verify
+        # with remaining peaks.
+        channel_to_energy: dict[float, float] = {}
+
+        if len(peak_energies) >= 2 and len(known_energies) >= 2:
+            # Find the two peaks with the largest separation — most reliable
+            # for gain estimation
+            max_separation = 0
+            best_pair = (0, 1)
+            for i in range(len(peak_energies)):
+                for j in range(i + 1, len(peak_energies)):
+                    sep = peak_energies[j] - peak_energies[i]
+                    if sep > max_separation:
+                        max_separation = sep
+                        best_pair = (i, j)
+
+            # Use the full known energy range to estimate gain
+            e_min, e_max = min(known_energies), max(known_energies)
+            if e_max != e_min:
+                gain = (peak_energies[best_pair[1]] - peak_energies[best_pair[0]]) / (
+                    e_max - e_min
+                )
+                intercept = peak_energies[best_pair[0]] - gain * e_min
+            else:
+                gain = 1.0
+                intercept = 0.0
+
+            # Map each known energy to a channel and verify against peaks
+            for target_energy in known_energies:
+                expected_channel = gain * target_energy + intercept
+                if 0 <= expected_channel < n_channels:
+                    best_idx = np.argmin(np.abs(peak_energies - expected_channel))
+                    detected_channel = float(peak_energies[best_idx])
+                    if np.abs(detected_channel - expected_channel) < 10.0:
+                        channel_to_energy[detected_channel] = target_energy
+
+        if len(channel_to_energy) < 2:
+            raise ValueError(
+                f"Could not match at least 2 Am-241 peaks. "
+                f"Found {len(channel_to_energy)} of {len(known_energies)} expected. "
+                f"Check calibration file or provide known_energies."
+            )
+
+        # Build calibration points and fit
+        calibrator = cls()
+        calibrator.set_calibration_points(list(channel_to_energy.items()))
+        return calibrator.fit_calibration(order=1)

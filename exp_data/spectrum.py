@@ -8,7 +8,10 @@ and calibration information.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from exp_data.calibration import CalibrationResult
 
 import numpy as np
 
@@ -134,6 +137,44 @@ class ExpSpectrum:
             errors=corrected_errors,
             metadata=self.metadata.copy(),
             dead_time=0.0,  # Corrected
+            live_time=self.live_time,
+            source=self.source,
+            run_id=self.run_id,
+            date=self.date,
+        )
+
+    def apply_calibration(self, calibration: "CalibrationResult") -> ExpSpectrum:
+        """Return a new spectrum with energies recalibrated via the given CalibrationResult.
+
+        The calibration polynomial is applied to the current energy axis:
+        calibrated_energies = calibration(channel_indices).
+
+        Parameters
+        ----------
+        calibration : CalibrationResult
+            A CalibrationResult from EnergyCalibrator (e.g., from Am-241 peak detection).
+
+        Returns
+        -------
+        ExpSpectrum
+            New ExpSpectrum with recalibrated energies, all other fields preserved.
+        """
+
+        calibrated_energies = calibration(self.energies)
+        return ExpSpectrum(
+            energies=calibrated_energies,
+            counts=self.counts.copy(),
+            errors=self.errors.copy(),
+            metadata={
+                **self.metadata,
+                "calibration": {
+                    "type": "linear" if calibration.order == 1 else "quadratic",
+                    "coefficients": calibration.coefficients.tolist(),
+                    "chi2_per_dof": calibration.chi2_per_dof,
+                    "n_points": calibration.n_points,
+                },
+            },
+            dead_time=self.dead_time,
             live_time=self.live_time,
             source=self.source,
             run_id=self.run_id,

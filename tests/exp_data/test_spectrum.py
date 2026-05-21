@@ -26,12 +26,13 @@ class TestExpSpectrumBasic:
         expected = np.sqrt([10.0, 20.0, 30.0])
         np.testing.assert_allclose(spectrum.errors, expected)
 
-    def test_zero_counts_get_error_one(self):
+    def test_zero_counts_get_zero_error(self):
+        """Zero counts produce zero error (not sqrt(1))."""
         spectrum = ExpSpectrum(
             energies=np.array([0.0, 1.0]),
             counts=np.array([0.0, 100.0]),
         )
-        assert spectrum.errors[0] == 1.0  # sqrt(1) for zero counts
+        assert spectrum.errors[0] == 0.0  # sqrt(0) = 0
 
     def test_shape_mismatch_raises(self):
         with pytest.raises(AssertionError):
@@ -47,12 +48,19 @@ class TestExpSpectrumBasic:
                 counts=np.array([10.0, 20.0]),
             )
 
-    def test_negative_counts_raises(self):
-        with pytest.raises(AssertionError):
-            ExpSpectrum(
-                energies=np.array([0.0, 1.0]),
-                counts=np.array([10.0, -5.0]),
-            )
+    def test_negative_counts_allowed_for_difference_spectra(self):
+        """Negative counts are allowed — they arise in cumulative subtraction.
+
+        Difference spectra can have negative counts in channels where the true
+        count is zero and Poisson noise causes the earlier cumulative to slightly
+        exceed the later one.
+        """
+        spectrum = ExpSpectrum(
+            energies=np.array([0.0, 1.0]),
+            counts=np.array([10.0, -5.0]),
+        )
+        # Should not raise; errors use abs(counts) for negative values
+        assert spectrum.errors[1] == np.sqrt(5.0)
 
     def test_total_counts(self):
         spectrum = ExpSpectrum(

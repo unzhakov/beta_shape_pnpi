@@ -163,14 +163,16 @@ def calibrate_from_am241(
     filepath = Path(filepath)
     with open(filepath, "rb") as f:
         f.read(128)  # skip header
-        counts = np.array(struct.unpack(f"{n_channels}i", f.read(n_channels * 4)), dtype=np.int64)
+        counts = np.array(
+            struct.unpack(f"{n_channels}i", f.read(n_channels * 4)), dtype=np.int64
+        )
 
     # Search for peaks in low-energy region only
     counts_low = counts.copy()
     counts_low[300:] = 0
     peaks, props = find_peaks(counts_low, height=10, distance=10)
     peak_energies = np.array(peaks, dtype=float)
-    peak_heights = props["peak_heights"]
+    _peak_heights = props["peak_heights"]  # noqa: F841
 
     # Known Am-241 gamma lines (keV)
     am241_lines = {13.8: None, 17.8: None, 26.3: None}
@@ -221,7 +223,7 @@ def read_am241_calibration(
     # Am-241 known peaks (keV): 13.8, 17.8, 26.3, 59.54
     # The spectrum typically has a few prominent peaks
     with open(filepath, "rb") as f:
-        header = f.read(128)
+        _header = f.read(128)
         counts_raw = struct.unpack(f"{n_channels}i", f.read(n_channels * 4))
 
     counts = np.array(counts_raw, dtype=np.float64)

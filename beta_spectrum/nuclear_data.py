@@ -469,7 +469,6 @@ def get_decay_info_from_paceENSDF(
 def decay_info_to_config(
     info: DecayInfo,
     e_step_MeV: float = 0.001,
-    use_detector_response: bool = False,
     intensity_cutoff: float = 0.0,
 ) -> SpectrumConfig:
     """
@@ -481,8 +480,6 @@ def decay_info_to_config(
         Parsed decay information.
     e_step_MeV : float
         Energy step size in MeV.
-    use_detector_response : bool
-        Whether to enable detector response convolution.
     intensity_cutoff : float
         Minimum branch intensity fraction to include.
 
@@ -513,7 +510,6 @@ def decay_info_to_config(
         endpoint_MeV=info.endpoint_MeV,
         transition_type=info.transition_type,
         e_step_MeV=e_step_MeV,
-        use_detector_response=use_detector_response,
         branches=branches,
         intensity_cutoff=intensity_cutoff,
     )
@@ -533,7 +529,6 @@ DEFAULT_JSON_SCHEMA = {
     "A_number": 99,
     "transition_type": "F2",
     "e_step_MeV": 0.001,
-    "use_detector_response": False,
     "detector_model": "gaussian",
     "detector_sigma_a_keV": 1.0,
     "detector_sigma_b": 0.0,
@@ -643,16 +638,8 @@ def json_to_config(data: Dict[str, Any]) -> SpectrumConfig:
         endpoint_MeV=float(data["endpoint_MeV"]),
         transition_type=str(data.get("transition_type", "A")),
         e_step_MeV=float(data.get("e_step_MeV", 0.001)),
-        use_detector_response=bool(data.get("use_detector_response", False)),
         detector_model=str(data.get("detector_model", "gaussian")),
-        detector_sigma_a_keV=float(data.get("detector_sigma_a_keV", 1.0)),
-        detector_sigma_b=float(data.get("detector_sigma_b", 0.0)),
-        detector_tail_fraction=float(data.get("detector_tail_fraction", 0.0)),
-        detector_tau_keV=float(data.get("detector_tau_keV", 5.0)),
-        detector_fano_factor=float(data.get("detector_fano_factor", 0.12)),
-        detector_n_channels=int(data.get("detector_n_channels", 4096)),
         detector_channel_energy_range=tuple(
-            data.get("detector_channel_energy_range", [0.0, 0.35])
         ),
     )
 
@@ -698,10 +685,8 @@ def create_config_from_source(
         decay_type = kwargs.get("decay_type", "beta_minus")
         decay_index = kwargs.get("decay_index", None)
         e_step = kwargs.get("e_step_MeV", 0.001)
-        use_det = kwargs.get("use_detector_response", False)
         info = get_decay_info_from_paceENSDF(nuclide, decay_type, decay_index)
         return decay_info_to_config(
-            info, e_step_MeV=e_step, use_detector_response=use_det
         )
     elif source == "json":
         if not json_path:

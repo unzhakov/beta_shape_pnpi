@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
     from beta_spectrum.spectrum import BetaSpectrum, SpectrumConfig
-    from beta_spectrum.components.detector_response import DetectorResponse
 
 
 class BetaSpectrumAnalyzer:
@@ -108,48 +107,6 @@ class BetaSpectrumAnalyzer:
 
         return total
 
-    def convolved_spectrum(
-        self,
-        detector_response: Optional["DetectorResponse"] = None,
-        normalize: bool = True,
-    ) -> np.ndarray:
-        """
-        Calculate spectrum convolved with detector response.
-
-        If detector_response is None and use_detector_response is True in config,
-        creates a detector response from config parameters.
-
-        Parameters
-        ----------
-        detector_response : DetectorResponse, optional
-            Detector response to convolve with. Created from config if None.
-        normalize : bool
-            If True, normalize to unit area.
-
-        Returns
-        -------
-        np.ndarray
-            Convolved spectrum.
-        """
-        if detector_response is None and self.config.use_detector_response:
-            detector_response = BetaSpectrum.create_detector_from_config(self.config)
-
-        if detector_response is None:
-            raise ValueError(
-                "detector_response must be provided, or set "
-                "use_detector_response=True in config"
-            )
-
-        convolved = self.spectrum.convolve_with_detector(
-            detector_response, W=self.W, config=self.config
-        )
-
-        if normalize:
-            integral = np.trapezoid(convolved, detector_response.channel_energies)
-            if integral > 0:
-                convolved = convolved / integral
-
-        return convolved
 
     # ---------------------------------------------------------------------------
     # Unified branch view
@@ -535,15 +492,6 @@ class BetaSpectrumAnalyzer:
                 f"transition={branch.transition_type}, "
                 f"intensity={branch.intensity:.4f}"
             )
-
-        if self.config.use_detector_response:
-            header_lines.append(
-                f"# detector: {self.config.detector_model} "
-                f"(sigma={self.config.detector_sigma_a_keV} keV, "
-                f"tail={self.config.detector_tail_fraction})"
-            )
-        else:
-            header_lines.append("# detector: disabled")
 
         header_lines.append(f"# git_commit: {get_git_short_hash()}")
 

@@ -15,11 +15,14 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
-    "pandas"
+    "pandas",
+    "nbformat>=5.10.4",
+    "nbconvert>=7.17.1",
 ]
 
 [project.optional-dependencies]
 ensdf = ["paceENSDF"]
+root = ["root"]  # PyROOT (requires system ROOT installation)
 dev = [
     "pytest",
     "nbmake",
@@ -34,6 +37,7 @@ dev = [
 
 [project.scripts]
 bs_pnpi = "beta_spectrum.cli:main"
+bs_exp = "exp_data.exp_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -9,7 +9,6 @@ from .components.finite_size import FiniteSizeL0, ChargeDistributionU
 from .components.screening import ScreeningCorrection
 from .components.exchange import ExchangeCorrection
 from .components.radiative import RadiativeCorrection
-from .components.detector_response import DetectorResponse
 
 from .spectrum import BetaSpectrum, SpectrumConfig, BranchConfig
 from .visualize import BetaSpectrumAnalyzer
@@ -39,7 +38,6 @@ __all__ = [
     "ScreeningCorrection",
     "ExchangeCorrection",
     "RadiativeCorrection",
-    "DetectorResponse",
     "BetaSpectrum",
     "SpectrumConfig",
     "BetaSpectrumAnalyzer",

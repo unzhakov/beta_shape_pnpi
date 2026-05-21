@@ -17,9 +17,6 @@ from beta_spectrum.components.radiative import RadiativeCorrection
 from beta_spectrum.utils import T_to_W
 from beta_spectrum.constants import ME_MEV
 
-if TYPE_CHECKING:
-    from beta_spectrum.components.detector_response import DetectorResponse
-
 
 @dataclass
 class BranchConfig:
@@ -61,7 +58,6 @@ class SpectrumConfig:
     Configuration for beta spectrum calculation.
 
     Supports declarative detector response specification:
-    set detector_model, detector_sigma_a_keV, and related parameters
     to enable automatic detector smearing via convolve_with_detector().
 
     Supports multi-branch decay via the `branches` field. When branches are
@@ -84,20 +80,6 @@ class SpectrumConfig:
     use_charge_dist: bool = True
     use_radiative: bool = True
     use_exchange: bool = True
-
-    # Detector response convolution (analytical model)
-    use_detector_response: bool = False
-    detector_model: str = "gaussian"
-    detector_sigma_a_keV: float = 1.0
-    detector_sigma_b: float = 0.0
-    detector_tail_fraction: float = 0.0
-    detector_tau_keV: float = 5.0
-    detector_fano_factor: float = 0.12
-    detector_n_channels: int = 4096
-    detector_channel_energy_range: tuple[float, float] = (
-        0.0,
-        0.35,
-    )  # in m_e units (total energy)
 
     # Multi-branch support
     branches: Optional[List[BranchConfig]] = None  # None → single-branch mode
@@ -470,133 +452,6 @@ class BetaSpectrum:
             result.append(self.branches[i].intensity * np.maximum(0.0, branch_spectrum))
         return result
 
-    @staticmethod
-    def create_detector_from_config(
-        config: SpectrumConfig,
-    ) -> "DetectorResponse":
-        """
-        Create a DetectorResponse from SpectrumConfig detector parameters.
 
-        Converts keV-based resolution parameters to m_e units internally.
-
-        Parameters
-        ----------
-        config : SpectrumConfig
-            Configuration with detector response parameters set.
-
-        Returns
-        -------
-        DetectorResponse
-            Detector response object ready for convolution.
-        """
-        from beta_spectrum.components.detector_response import DetectorResponse
-        from beta_spectrum.utils import T_to_W
-
-        sigma_a_me = config.detector_sigma_a_keV / ME_MEV
-
-        tau_me = config.detector_tau_keV / ME_MEV
-
-        W0 = T_to_W(config.endpoint_MeV)
-        channel_range = config.detector_channel_energy_range
-
-        # Extend range to cover endpoint
-        if channel_range[1] < W0:
-            channel_range = (channel_range[0], float(W0 + 0.05))
-
-        detector = DetectorResponse.from_gaussian_params(
-            channel_energy_range=channel_range,
-            n_channels=config.detector_n_channels,
-            sigma_a=sigma_a_me,
-            sigma_b=config.detector_sigma_b,
-            tail_fraction=config.detector_tail_fraction,
-            tau=tau_me,
-            model=config.detector_model,
-            fano_factor=config.detector_fano_factor,
-        )
-        return detector
-
-    def convolve_with_detector(
-        self,
-        detector_response: "DetectorResponse",
-        W: Optional[np.ndarray] = None,
-        config: Optional[SpectrumConfig] = None,
-    ) -> np.ndarray:
-        """
-        Convolve theoretical spectrum with detector response.
-
-        Returns the predicted measured spectrum after detector smearing.
-
-        Parameters
-        ----------
-        detector_response : DetectorResponse
-            Detector response object (analytical or tabulated).
-        W : np.ndarray, optional
-            Energy grid in m_e units. If None, generated from config.
-        config : SpectrumConfig, optional
-            Used to generate energy grid if W is None.
-
-        Returns
-        -------
-        np.ndarray
-            Convolved spectrum (predicted measured counts per channel).
-        """
-        if W is None:
-            if config is None:
-                raise ValueError("Either W or config must be provided")
-            W, _ = self.get_energy_grid(config)
-
-        theoretical_spectrum = self(W)
-
-        if self._logger:
-            self._logger.debug(
-                "Convolution: %d channels, %d spectrum points",
-                len(detector_response.channel_energies),
-                len(W),
-            )
-
-        convolved = detector_response.convolve(W, theoretical_spectrum, normalize=True)
-        return convolved
-
-    def convolve_detector(
-        self,
-        config: SpectrumConfig,
-        W: Optional[np.ndarray] = None,
-        detector_response: Optional["DetectorResponse"] = None,
-    ) -> np.ndarray:
-        """
-        Convolve theoretical spectrum with detector response from config.
-
-        Convenience method: creates DetectorResponse from config parameters
-        and convolves the spectrum in a single call.
-
-        Parameters
-        ----------
-        config : SpectrumConfig
-            Configuration with detector response parameters set.
-        W : np.ndarray, optional
-            Energy grid in m_e units. If None, generated from config.
-        detector_response : DetectorResponse, optional
-            Pre-built detector response. If None, created from config.
-
-        Returns
-        -------
-        np.ndarray
-            Convolved spectrum (predicted measured counts per channel).
-
-        Examples
-        --------
-        >>> config = SpectrumConfig(
-        ...     Z_parent=43, Z_daughter=44, A_number=99, endpoint_MeV=0.294,
-        ...     use_detector_response=True,
-        ...     detector_sigma_a_keV=1.0,
-        ... )
-        >>> spectrum = BetaSpectrum.from_config(config)
-        >>> W, _ = spectrum.get_energy_grid(config)
-        >>> convolved = spectrum.convolve_detector(config, W=W)
-        """
-        if detector_response is None:
-            detector_response = self.create_detector_from_config(config)
-
-        return self.convolve_with_detector(detector_response, W=W, config=config)
 
 
