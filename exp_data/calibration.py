@@ -337,54 +337,81 @@ class EnergyCalibrator:
                 struct.unpack(f"{n_channels}i", f.read(n_channels * 4)), dtype=np.int64
             )
 
-        # Search for peaks in low-energy region
-        counts_low = counts.copy()
-        counts_low[300:] = 0
-        peaks, _ = find_peaks(counts_low, height=10, distance=10)
+        # Search for prominent gamma peaks across the full spectrum.
+        # Exclude the high-energy pulser region (last ~200 channels).
+        counts_search = counts.copy()
+        pulser_cutoff = max(n_channels - 200, 300)
+        counts_search[pulser_cutoff:] = 0
+
+        # Find peaks with moderate thresholds.
+        # height=100 skips noise floor; distance=5 keeps nearby peaks separate.
+        peaks, _ = find_peaks(counts_search, height=100, distance=5)
         peak_energies = np.array(peaks, dtype=float)
+        peak_counts = counts_search[peaks]
 
-        # Known Am-241 gamma lines
+        # Known Am-241 gamma lines (keV)
         if known_energies is None:
-            known_energies = [13.8, 17.8, 26.3]
+            known_energies = [13.0, 17.8, 26.3, 59.54]
 
-        # Match peaks to known energies.
-        # Am-241 has well-known lines: 13.8, 17.8, 26.3 keV (and 59.54 keV).
-        # Strategy: find the two closest peaks with the largest energy gap,
-        # assign the known energies to them proportionally, then verify
-        # with remaining peaks.
+        # Match peaks to known energies by brute-force search:
+        # for every pair of prominent peaks, estimate gain from the known
+        # energy span, then count how many known lines land near a peak.
         channel_to_energy: dict[float, float] = {}
 
         if len(peak_energies) >= 2 and len(known_energies) >= 2:
-            # Find the two peaks with the largest separation — most reliable
-            # for gain estimation
-            max_separation = 0
-            best_pair = (0, 1)
+            best_score = -1
+
             for i in range(len(peak_energies)):
                 for j in range(i + 1, len(peak_energies)):
-                    sep = peak_energies[j] - peak_energies[i]
-                    if sep > max_separation:
-                        max_separation = sep
-                        best_pair = (i, j)
+                    ch1, ch2 = peak_energies[i], peak_energies[j]
+                    cnt1, cnt2 = peak_counts[i], peak_counts[j]
 
-            # Use the full known energy range to estimate gain
-            e_min, e_max = min(known_energies), max(known_energies)
-            if e_max != e_min:
-                gain = (peak_energies[best_pair[1]] - peak_energies[best_pair[0]]) / (
-                    e_max - e_min
-                )
-                intercept = peak_energies[best_pair[0]] - gain * e_min
-            else:
-                gain = 1.0
-                intercept = 0.0
+                    # Only consider prominent peaks (top 20% by count)
+                    threshold = np.percentile(peak_counts, 80)
+                    if cnt1 < threshold or cnt2 < threshold:
+                        continue
+                    if ch2 <= ch1:
+                        continue
 
-            # Map each known energy to a channel and verify against peaks
-            for target_energy in known_energies:
-                expected_channel = gain * target_energy + intercept
-                if 0 <= expected_channel < n_channels:
-                    best_idx = np.argmin(np.abs(peak_energies - expected_channel))
-                    detected_channel = float(peak_energies[best_idx])
-                    if np.abs(detected_channel - expected_channel) < 10.0:
-                        channel_to_energy[detected_channel] = target_energy
+                    # Try each pair of known energies as anchors
+                    for e_a_idx in range(len(known_energies)):
+                        for e_b_idx in range(e_a_idx + 1, len(known_energies)):
+                            e_a = known_energies[e_a_idx]
+                            e_b = known_energies[e_b_idx]
+
+                            # Linear calibration: ch = gain*(E - E0)
+                            # gain = (ch2 - ch1) / (e_b - e_a)  [ch/keV]
+                            gain = (ch2 - ch1) / (e_b - e_a)
+                            intercept = ch1 - gain * e_a  # ch offset
+                            if gain <= 0:
+                                continue
+                            # Constrain gain to physically plausible range.
+                            # For beta spectrometers: ~5-25 ch/keV
+                            # (Tc-99 endpoint ~294 keV in ~4096 ch → ~14 ch/keV)
+                            if gain < 3.0 or gain > 40.0:
+                                continue
+
+                            # Verify: how many known energies map near a peak?
+                            matches = []
+                            for e in known_energies:
+                                expected_ch = gain * e + intercept
+                                if expected_ch < 0 or expected_ch >= pulser_cutoff:
+                                    continue
+                                idx = np.argmin(np.abs(peak_energies - expected_ch))
+                                actual_ch = peak_energies[idx]
+                                if np.abs(actual_ch - expected_ch) < 15.0:
+                                    matches.append((actual_ch, e))
+
+                            if len(matches) >= 2:
+                                avg_count = np.mean(
+                                    [counts_search[int(ch)] for ch, _ in matches]
+                                )
+                                score = len(matches) * avg_count
+                                if score > best_score:
+                                    best_score = score
+                                    channel_to_energy = {
+                                        float(ch): e for ch, e in matches
+                                    }
 
         if len(channel_to_energy) < 2:
             raise ValueError(
