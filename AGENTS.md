@@ -52,11 +52,12 @@ State which phase you're in. Name phases explicitly.
 All must pass before merge:
 
 ```bash
-pytest
-nbmake notebooks/
-black --check .
-ruff check .
-mypy .
+pytest                           # all tests (markers: property, physics, api, quality, integration, slow, requires_ensdf)
+nbmake notebooks/                # execute notebooks as tests
+black --check .                  # formatting
+ruff check .                     # linting
+mypy .                           # type checking (strict)
+python scripts/docs_check.py     # documentation consistency (version, file refs, CLI args)
 ```
 
 Run individually to identify failures.
@@ -67,6 +68,7 @@ After quality gates pass, run:
 
 ```bash
 bs_pnpi --nuclide Tc99 -vv --output ./output/verification.csv --plot ./output/verification.png --log-file ./output/debug.log 2>&1 | tee ./output/debug_stdout.log
+bs_exp --help                    # verify experimental data CLI
 ```
 
 Verify parameter consistency across all components. Save artifacts to `./output/`.
