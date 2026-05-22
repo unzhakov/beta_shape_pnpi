@@ -37,7 +37,7 @@ beta_spectrum/              ← theory-only core
 
 exp_data/                   ← experimental data handling
 ├── __init__.py
-├── raw_data.py             ← raw data loading (ROOT, CSV, ASCII)
+├── raw_reader.py           ← raw data loading (ROOT, CSV, ASCII)
 ├── calibration.py          ← energy calibration, line fitting
 ├── fitters.py              ← simple Gaussian fitters for cal sources
 ├── corrections.py          ← dead-time, pile-up, background
@@ -49,7 +49,7 @@ fitter/                     ← main analysis framework
 ├── fit_engine.py           ← multi-parameter fitting orchestration
 ├── extractor.py            ← C(W), g_V, g_A extraction
 ├── result.py               ← FitResult, analysis results
-└── report.py               ← PDF report generation
+# └── report.py               ← PDF report generation (deferred)
 
 visualize/                  ← visualization / plotting
 └── visualize/__init__.py   ← BetaSpectrumAnalyzer
@@ -79,13 +79,12 @@ visualize/                  ← visualization / plotting
 - [x] Detector convolution handles W < 1.0 edge cases
 
 #### Phase 3: Clean up `beta_spectrum` ✅ COMPLETE
-- [x] Remove `cw_extractor.py` (moved to `fitter/`)
-- [x] Remove `fitter.py` (moved to `fitter/`)
-- [x] `DetectorResponse` stays in `beta_spectrum/components/detector_response.py` as pure data class (no convolution logic — that's in `fitter/model.py`)
-- [x] Clean up `__init__.py` — only exports theory classes + DetectorResponse data class
+- [x] Remove `cw_extractor.py` (moved to `fitter/extractor.py`)
+- [x] Remove `fitter.py` (moved to `fitter/fit_engine.py`)
+- [x] Clean up `__init__.py` — only exports theory classes
 - [x] Add `CurveFitter` general-purpose fitter to `fitter/fit_engine.py` for backward compat
 - [x] Add `CWExtractor.fit_parametrization()` and `fit_gV_gA()` compatibility methods
-- [x] Remove old `test_cw_extractor.py` (replaced by `tests/fitter/test_extractor.py`)
+- [x] Remove old `test_cw_extractor.py` (replaced by `tests/fitter/test_extractor.py` — file was removed)
 - [x] 322 tests pass, ruff + mypy clean on all 26 source files
 
 #### Phase 4: Update package structure ✅ COMPLETE
@@ -120,11 +119,9 @@ ______________________________________________________________________
   - ~~Parameters: energy resolution σ(E), tail fraction, tail shape~~
   - ~~Energy-dependent resolution σ(E) = a + b·√E~~
   - ~~Implemented: Gaussian, Gaussian+tail, Tikhonov models with energy-dependent resolution and Fano factor~~
-- [x] ~~Implement convolution/deconvolution routines~~
+- [x] ~~Implement convolution routines~~
   - ~~Convolve theoretical spectrum with detector response for comparison to data~~
-  - ~~Deconvolve measured spectrum to recover true shape (for initial C(W) extraction)~~
-  - ~~Iterative unfolding (Richardson-Lucy or similar)~~
-  - ~~Implemented: convolve() and convolve_batch() with tabulated response support~~
+  - ~~Implemented: convolve() with tabulated response support~~
 - [ ] Monte Carlo simulation (GEANT4) — out of scope for this project but noted for future
   - Full detector geometry simulation
   - Energy loss in source, dead layers, absorber
