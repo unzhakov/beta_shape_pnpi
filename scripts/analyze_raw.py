@@ -29,7 +29,7 @@ from exp_data.raw_reader import (
 )
 
 # Energy calibration from Am-241 source: E = offset + gain * channel
-# Determined automatically from known Am-241 gamma lines (13.8, 17.8, 26.3 keV)
+# Determined automatically from known Am-241 gamma lines (13.9, 17.8, 26.3 keV)
 CALIBRATION_FILE = "data/raw/CAM1.DAT"
 _calib_offset, _calib_gain = calibrate_from_am241(CALIBRATION_FILE)
 ENERGY_OFFSET = _calib_offset
@@ -212,9 +212,9 @@ def main():
     endpoints = np.array(endpoints)
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Analysis of {len(run_ids)} individual Tc-99 runs")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Run range: {run_ids.min()} - {run_ids.max()}")
     print(f"Total counts: {total_rates.min():.0f} - {total_rates.max():.0f}")
     print(f"Low-energy fraction: {low_fractions.min():.3f} - {low_fractions.max():.3f}")
@@ -234,7 +234,9 @@ def main():
     # Save results
     results_file = output_dir / "rate_analysis.csv"
     with open(results_file, "w") as f:
-        f.write("run,total_counts,low_energy_counts,high_energy_counts,low_fraction,endpoint_keV\n")
+        f.write(
+            "run,total_counts,low_energy_counts,high_energy_counts,low_fraction,endpoint_keV\n"
+        )
         for i in range(len(run_ids)):
             f.write(
                 f"{run_ids[i]},{total_rates[i]:.0f},{low_rates[i]:.0f},"
@@ -265,7 +267,9 @@ def main():
         # Endpoint
         axes[1, 0].plot(run_ids, endpoints, "r-", lw=1.5)
         axes[1, 0].axhline(
-            TC99_ENDPOINT, color="gray", ls="--",
+            TC99_ENDPOINT,
+            color="gray",
+            ls="--",
             label=f"Tc-99 Q ≈ {TC99_ENDPOINT} keV",
         )
         axes[1, 0].set_xlabel("Run number")

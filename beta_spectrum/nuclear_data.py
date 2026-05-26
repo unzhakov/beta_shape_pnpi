@@ -272,7 +272,7 @@ def _get_decay_mode_symbol(
     }
     if decay_type not in mapping:
         raise ValueError(
-            f"Unknown decay type '{decay_type}'. " f"Supported: {list(mapping.keys())}"
+            f"Unknown decay type '{decay_type}'. Supported: {list(mapping.keys())}"
         )
     return mapping[decay_type]
 
@@ -638,9 +638,6 @@ def json_to_config(data: Dict[str, Any]) -> SpectrumConfig:
         endpoint_MeV=float(data["endpoint_MeV"]),
         transition_type=str(data.get("transition_type", "A")),
         e_step_MeV=float(data.get("e_step_MeV", 0.001)),
-        detector_model=str(data.get("detector_model", "gaussian")),
-        detector_channel_energy_range=tuple(
-        ),
     )
 
 
@@ -685,8 +682,12 @@ def create_config_from_source(
         decay_type = kwargs.get("decay_type", "beta_minus")
         decay_index = kwargs.get("decay_index", None)
         e_step = kwargs.get("e_step_MeV", 0.001)
+        intensity_cutoff = kwargs.get("intensity_cutoff", 0.0)
         info = get_decay_info_from_paceENSDF(nuclide, decay_type, decay_index)
         return decay_info_to_config(
+            info,
+            e_step_MeV=e_step,
+            intensity_cutoff=intensity_cutoff,
         )
     elif source == "json":
         if not json_path:

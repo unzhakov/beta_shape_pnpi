@@ -151,7 +151,7 @@ def calibrate_from_am241(
         Path to the Am-241 binary file (CAM1.DAT or CAM2.DAT).
     known_peaks
         Mapping of energy_keV -> expected channel. If None, auto-detects
-        Am-241 peaks at 13.8, 17.8, 26.3 keV.
+        Am-241 peaks at 13.9, 17.8, 26.3 keV.
     n_channels
         Number of channels.
 
@@ -175,7 +175,7 @@ def calibrate_from_am241(
     _peak_heights = props["peak_heights"]  # noqa: F841
 
     # Known Am-241 gamma lines (keV)
-    am241_lines = {13.8: None, 17.8: None, 26.3: None}
+    am241_lines = {13.9: None, 17.8: None, 26.3: None}
     if known_peaks:
         am241_lines = known_peaks
     else:
@@ -220,7 +220,7 @@ def read_am241_calibration(
     """
     filepath = Path(filepath)
 
-    # Am-241 known peaks (keV): 13.8, 17.8, 26.3, 59.54
+    # Am-241 known peaks (keV): 13.9, 17.8, 26.3, 59.54
     # The spectrum typically has a few prominent peaks
     with open(filepath, "rb") as f:
         _header = f.read(128)
@@ -232,7 +232,7 @@ def read_am241_calibration(
     metadata = {
         "source": "Am241",
         "calibration_type": "energy",
-        "known_peaks_keV": [13.8, 17.8, 26.3, 59.54],
+        "known_peaks_keV": [13.9, 17.8, 26.3, 59.54],
     }
 
     return ExpSpectrum(

@@ -312,7 +312,7 @@ class EnergyCalibrator:
         filepath : str or Path
             Path to the Am-241 binary calibration file (CAM1.DAT or CAM2.DAT).
         known_energies : list of float, optional
-            Known Am-241 line energies in keV. Defaults to [13.8, 17.8, 26.3].
+            Known Am-241 line energies in keV. Defaults to [13.9, 17.8, 26.3, 59.54].
         n_channels : int
             Number of channels (default 4096).
 
@@ -352,8 +352,11 @@ class EnergyCalibrator:
         peak_counts = counts_search[peaks]
 
         # Known Am-241 gamma lines (keV)
+        # Am-241 decays to Np-237; Np K X-rays at 13.9 keV (Kα), 17.8 keV (Kβ),
+        # 20.8 keV (L-series); Np gamma at 26.3 keV; Np/Am gamma at 59.54 keV.
+        # Source: LNHb Table de Radionucléides, IAEA nuclear data.
         if known_energies is None:
-            known_energies = [13.0, 17.8, 26.3, 59.54]
+            known_energies = [13.9, 17.8, 26.3, 59.54]
 
         # Match peaks to known energies using a simpler, more robust
         # approach: find the two strongest peaks that span the largest

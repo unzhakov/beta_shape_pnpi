@@ -202,7 +202,8 @@ class TestDecayInfoToConfig:
         assert abs(config.endpoint_MeV - 0.294) < 1e-6
         assert config.transition_type == "A"
 
-    def test_with_detector_response(self):
+    def test_with_e_step_and_cutoff(self):
+        """Verify e_step_MeV and intensity_cutoff kwargs are passed through."""
         info = DecayInfo(
             parent_symbol="Co60",
             Z_parent=27,
@@ -215,13 +216,30 @@ class TestDecayInfoToConfig:
             parent_J=0.0,
             parent_pi=1,
             half_life="y",
-            branches=[],
+            branches=[
+                BranchInfo(
+                    level_index=0,
+                    level_energy_keV=0.0,
+                    intensity=0.5,
+                    log_ft=5.0,
+                    transition_type="A",
+                ),
+                BranchInfo(
+                    level_index=1,
+                    level_energy_keV=10.0,
+                    intensity=0.3,
+                    log_ft=6.0,
+                    transition_type="A",
+                ),
+            ],
         )
-        config = decay_info_to_config(
-            info, use_detector_response=True, e_step_MeV=0.005
-        )
-        assert config.use_detector_response is True
+        config = decay_info_to_config(info, e_step_MeV=0.005, intensity_cutoff=0.4)
         assert config.e_step_MeV == 0.005
+        assert config.intensity_cutoff == 0.4
+        # Only branch with intensity >= 0.4 should be included
+        assert config.branches is not None
+        assert len(config.branches) == 1
+        assert config.branches[0].intensity == 0.5
 
 
 # ---------------------------------------------------------------------------

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from beta_spectrum.logging_utils import LoggingConfig, setup_logging
 from beta_spectrum.spectrum import SpectrumConfig
@@ -52,8 +53,18 @@ def _build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__import__('beta_spectrum').__version__}",
     )
 
-    # Source selection (mutually exclusive)
-    source_group = parser.add_mutually_exclusive_group(required=True)
+    # Source selection (positional or flag)
+    parser.add_argument(
+        "source",
+        nargs="?",
+        default=None,
+        help="Nuclide symbol (e.g. 'Tc99') or JSON file path. "
+        "Can also use --nuclide <symbol> or --input <file>. "
+        "Auto-detected: .json extension → JSON input, otherwise → paceENSDF.",
+    )
+
+    # Source selection flags (backward compatible, mutually exclusive)
+    source_group = parser.add_mutually_exclusive_group(required=False)
     source_group.add_argument(
         "--nuclide",
         type=str,
@@ -171,12 +182,36 @@ def _run(args: argparse.Namespace) -> None:
     logger.info("bs_pnpi starting...")
     logger.debug("Verbosity: %s | Log file: %s", log_level, args.log_file or "none")
 
+    # Resolve source: positional arg takes precedence, then flags
+    source_value = args.source
+    if source_value is None and args.nuclide:
+        source_value = args.nuclide
+    elif source_value is None and args.input:
+        source_value = args.input
+    elif source_value is not None:
+        # Auto-detect from positional argument
+        if source_value.endswith(".json") or Path(source_value).exists():
+            source_value = source_value
+        # else: keep as-is (nuclide symbol)
+
+    if source_value is None:
+        logger.error(
+            "Required: specify nuclide or JSON file "
+            "(e.g., 'bs_pnpi Tc99' or 'bs_pnpi --nuclide Tc99')"
+        )
+        sys.exit(1)
+
+    # Determine source type
+    if source_value.endswith(".json"):
+        source_type = "json"
+    else:
+        source_type = "paceENSDF"
+
     # Build config
-    source_type: str
     config: SpectrumConfig
-    if args.nuclide:
-        logger.info("Source: paceENSDF nuclide=%s", args.nuclide)
-        decay_info = get_decay_info_from_paceENSDF(args.nuclide, "beta_minus")
+    if source_type == "paceENSDF":
+        logger.info("Source: paceENSDF nuclide=%s", source_value)
+        decay_info = get_decay_info_from_paceENSDF(source_value, "beta_minus")
 
         # Normalize branch intensities to sum to 1.0
         if decay_info.branches:
@@ -208,24 +243,21 @@ def _run(args: argparse.Namespace) -> None:
             else:
                 config = create_config_from_source(
                     "paceENSDF",
-                    nuclide=args.nuclide,
+                    nuclide=source_value,
                     e_step_MeV=args.e_step,
+                    intensity_cutoff=args.intensity_cutoff,
                 )
         else:
             config = create_config_from_source(
                 "paceENSDF",
-                nuclide=args.nuclide,
+                nuclide=source_value,
                 e_step_MeV=args.e_step,
+                intensity_cutoff=args.intensity_cutoff,
             )
-        source_type = "paceENSDF"
-    elif args.input:
-        logger.info("Source: JSON file=%s", args.input)
-        data = load_json_input(args.input)
-        config = json_to_config(data)
-        source_type = "json"
     else:
-        logger.error("No source specified (use --nuclide or --input)")
-        sys.exit(1)
+        logger.info("Source: JSON file=%s", source_value)
+        data = load_json_input(source_value)
+        config = json_to_config(data)
 
     # Dry run: display resolved config and exit
     if args.dry_run:
@@ -307,24 +339,19 @@ def _print_dry_run_output(config, source_type: str) -> None:
         print(f"\nMulti-branch mode: {len(config.branches)} branches")
         if config.intensity_cutoff > 0:
             print(
-                f"Intensity cutoff: {config.intensity_cutoff:.4f} ({config.intensity_cutoff*100:.1f}%)"
+                f"Intensity cutoff: {config.intensity_cutoff:.4f} ({config.intensity_cutoff * 100:.1f}%)"
             )
         for i, branch in enumerate(config.branches):
             print(
-                f"  Branch {i+1}: E₀={branch.endpoint_MeV*1000:.1f} keV, "
+                f"  Branch {i + 1}: E₀={branch.endpoint_MeV * 1000:.1f} keV, "
                 f"transition={branch.transition_type}, "
                 f"intensity={branch.intensity:.4f}"
             )
     else:
         print("Mode: single-branch")
 
-    if config.use_detector_response:
-        print(
-            f"Detector:   {config.detector_model} (sigma={config.detector_sigma_a_keV} keV, "
-            f"tail={config.detector_tail_fraction})"
-        )
-    else:
-        print("Detector:   disabled")
+    # Detector response is a Phase 4 feature — not yet implemented
+    print("Detector:   not configured (Phase 4)")
     print("========================================")
 
 
