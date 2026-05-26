@@ -178,4 +178,5 @@ htmlcov/
 .cache/
 .obsidian/
 .rpiv/
+.pi-lens/
 data/raw/
